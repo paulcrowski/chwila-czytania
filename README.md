@@ -11,7 +11,7 @@ Dodaj Interię do stałej blokady, a Onet i Pudelka do grupy z limitem **5 minut
 | Reguła | Co zobaczysz przy pierwszym wejściu |
 | --- | --- |
 | **Zawsze blokuj** | Wejście na Interię od razu otworzy czytnik. |
-| **Limit dzienny** | Onet otworzy czytnik. Po 30 sekundach możesz kliknąć **Otwórz portal** i uruchomić wspólny minutnik dla Onetu i Pudelka. |
+| **Limit dzienny** | Onet otworzy czytnik. Po wybranym czasie oczekiwania możesz kliknąć **Otwórz portal** i uruchomić wspólny minutnik dla Onetu i Pudelka. |
 
 Jeśli dwie strony są w tej samej grupie, dzielą jedną sesję dziennie. Czas biegnie również w tle. Minuty pozostałe do końca najbliższej sesji widać na ikonie dodatku. Kliknij ikonę, żeby zobaczyć dokładny czas każdej aktywnej sesji. Po wyczerpaniu limitu otwarte strony z tej grupy wracają do czytnika.
 
@@ -21,11 +21,16 @@ Jeśli dwie strony są w tej samej grupie, dzielą jedną sesję dziennie. Czas 
 2. Otwórz `chrome://extensions`, włącz **Tryb dewelopera** i kliknij **Załaduj rozpakowane**. Wskaż folder `chwila-czytania` z plikiem `manifest.json`.
 3. Otwórz **Ustawienia** z menu dodatku. Dodaj domeny pojedynczo albo po przecinku. Każda reguła obejmuje również subdomeny.
 4. Wybierz stałą blokadę albo jedną z dwóch grup czasowych. Domyślne limity to 10 i 15 minut. Możesz je zmienić, a nowy limit zacznie obowiązywać od następnej sesji.
-5. Kliknij **Zapisz zmiany** i przyznaj dodatkowi dostęp do podanych domen.
+5. Ustaw **Czas przed wejściem na portal**. Domyślnie to 30 sekund. Wpisz np. 60, 120 lub 0, jeśli przycisk **Otwórz portal** ma pojawiać się od razu.
+6. Kliknij **Zapisz zmiany** i przyznaj dodatkowi dostęp do podanych domen.
+
+Otwartą stronę możesz też dodać z ikony dodatku. W sekcji **Dodaj tę stronę** wybierz regułę, zapisz ją i potwierdź dostęp do domeny, jeśli Chrome o to poprosi.
+
+Aby zmienić język menu, ustawień i czytnika, wybierz **Polski** albo **English** w polu **Język dodatku** u góry ustawień.
 
 ## Własna książka
 
-Możesz zacząć od tekstu demonstracyjnego albo wczytać **dowolną książkę lub własny tekst jako plik TXT w UTF-8**. Przycisk **Czytaj dalej** zapisuje miejsce. Jeśli szukasz przykładowej lektury, możesz przygotować plik TXT z [*The Machine Stops* E. M. Forstera (PDF ze Stanforda)](https://hci.stanford.edu/courses/cs047n/readings/forster.pdf).
+Możesz zacząć od tekstu demonstracyjnego po polsku lub angielsku albo wczytać **dowolną książkę lub własny tekst jako plik TXT w UTF-8**. Przycisk **Czytaj dalej** zapisuje miejsce. Jeśli szukasz przykładowej lektury, możesz przygotować plik TXT z [*The Machine Stops* E. M. Forstera (PDF ze Stanforda)](https://hci.stanford.edu/courses/cs047n/readings/forster.pdf).
 
 ## Aktualizacja
 

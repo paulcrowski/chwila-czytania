@@ -11,23 +11,26 @@ Say you block Interia completely and put Onet and Pudelek in a group with a **5-
 | Rule | What happens on the first visit |
 | --- | --- |
 | **Always block** | Interia takes you straight to the reader. |
-| **Daily limit** | Onet opens the reader. After 30 seconds, click **Otwórz portal** (Open site) to start the timer shared by Onet and Pudelek. |
+| **Daily limit** | Onet opens the reader. After the configured wait, click **Open site** to start the timer shared by Onet and Pudelek. |
 
 Sites in the same group share one session per day. The timer keeps running in the background. The extension icon shows the minutes remaining before the next session ends. Click the icon to see the exact time for each active session. When the timer runs out, open sites in that group return to the reader.
 
 ## Install and configure
 
-The extension interface is in Polish. The labels below match what you'll see.
+To switch the extension to English, choose **English** in the **Język dodatku** (Extension language) menu at the top of Settings.
 
 1. Download the ZIP and extract it to a folder you want to keep.
 2. Open `chrome://extensions`, enable **Developer mode**, and click **Load unpacked**. Select the `chwila-czytania` folder containing `manifest.json`.
-3. Choose **Ustawienia** (Settings) from the extension menu. Add domains one at a time or as a comma-separated list. Rules also cover subdomains.
-4. Choose **Zawsze blokuj** (Always block) or one of the two timed groups. Their default limits are 10 and 15 minutes. A new limit applies to the next session.
-5. Click **Zapisz zmiany** (Save changes) and grant the extension access to the domains you added.
+3. Choose **Settings** from the extension menu. Add domains one at a time or as a comma-separated list. Rules also cover subdomains.
+4. Choose **Always block** or one of the two timed groups. Their default limits are 10 and 15 minutes. A new limit applies to the next session.
+5. Set **Wait before opening a site**. The default is 30 seconds. Enter 60, 120 or 0, for example. At 0, the **Open site** button appears immediately.
+6. Click **Save changes** and grant the extension access to the domains you added.
+
+To add the current site without leaving the tab, click the extension icon, choose a rule under **Add this site**, and save it. Chrome asks for domain access when needed.
 
 ## Bring your own book
 
-Start with the included sample or **import any book or other text as a UTF-8 TXT file**. **Czytaj dalej** (Read on) saves your place. If you want a reading suggestion, try preparing a TXT file from [E. M. Forster’s *The Machine Stops* (Stanford PDF)](https://hci.stanford.edu/courses/cs047n/readings/forster.pdf).
+Start with the included sample in English or Polish or **import any book or other text as a UTF-8 TXT file**. **Read on** saves your place. If you want a reading suggestion, try preparing a TXT file from [E. M. Forster’s *The Machine Stops* (Stanford PDF)](https://hci.stanford.edu/courses/cs047n/readings/forster.pdf).
 
 ## Update
 

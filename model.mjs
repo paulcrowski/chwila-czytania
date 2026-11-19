@@ -1,4 +1,6 @@
-export const WAIT_MS = 30_000;
+import { appError } from './i18n.mjs';
+
+export const DEFAULT_WAIT_SECONDS = 30;
 export const MINUTES = { short: 10, long: 15 };
 export const MAX_MINUTES = 1440;
 export const BUCKETS = { block: 0, short: 1, long: 2 };
@@ -14,20 +16,34 @@ export function readSites(fields) {
   const existing = [];
   for (const group of Object.keys(sites)) {
     for (const entry of fields[group].split(/[\s,]+/).filter(Boolean)) {
-      const url = new URL(/^https?:\/\//i.test(entry) ? entry : 'https://' + entry);
-      const domain = url.hostname.replace(/^www\./, '').replace(/\.$/, '');
-      if (!/^(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z][a-z0-9-]*$/i.test(domain)) {
-        throw new Error('Wpisz nazwę domeny, np. onet.pl.');
+      let url;
+      try {
+        url = new URL(/^https?:\/\//i.test(entry) ? entry : 'https://' + entry);
+      } catch {
+        throw appError('domainInvalid');
       }
+      const domain = normalizeDomain(url.hostname);
       if (existing.some(other => inDomain(domain, other) || inDomain(other, domain))) {
-        throw new Error('Domena występuje już na liście: ' + domain);
+        throw appError('domainOverlap', domain);
       }
       existing.push(domain);
       sites[group].push(domain);
     }
   }
-  if (existing.length > 100) throw new Error('Prototyp obsługuje do 100 domen.');
+  if (existing.length > 100) throw appError('domainCount');
   return sites;
+}
+
+export function normalizeDomain(hostname) {
+  const domain = hostname.toLowerCase().replace(/^www\./, '').replace(/\.$/, '');
+  if (!/^(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z][a-z0-9-]*$/i.test(domain)) {
+    throw appError('domainInvalid');
+  }
+  return domain;
+}
+
+export function domainOrigins(domain) {
+  return ['http://*.' + domain + '/*', 'https://*.' + domain + '/*'];
 }
 
 export function readLimits(values) {
@@ -36,11 +52,20 @@ export function readLimits(values) {
     const raw = String(values[group] ?? '').trim();
     const minutes = Number(raw);
     if (!/^\d+$/.test(raw) || minutes < 1 || minutes > MAX_MINUTES) {
-      throw new Error('Podaj pełną liczbę minut od 1 do ' + MAX_MINUTES + '.');
+      throw appError('limitsInvalid', MAX_MINUTES);
     }
     limits[group] = minutes;
   }
   return limits;
+}
+
+export function readWaitSeconds(value) {
+  const raw = String(value ?? '').trim();
+  const seconds = Number(raw);
+  if (!/^\d+$/.test(raw) || !Number.isSafeInteger(Date.now() + seconds * 1000)) {
+    throw appError('waitInvalid');
+  }
+  return seconds;
 }
 
 export function inDomain(host, domain) {

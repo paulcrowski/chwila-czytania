@@ -1,7 +1,8 @@
 import {
-  WAIT_MS, BUCKETS, EMPTY_SITES, MINUTES, groupFor, inDomain, newSession, portalUrl,
-  readLimits, readerPath, redirectRules, sessionState,
+  DEFAULT_WAIT_SECONDS, BUCKETS, EMPTY_SITES, MINUTES, domainOrigins, groupFor, inDomain, newSession, normalizeDomain, portalUrl,
+  readLimits, readSites, readWaitSeconds, readerPath, redirectRules, sessionState,
 } from './model.mjs';
+import { appError, translator } from './i18n.mjs';
 
 const dnr = chrome.declarativeNetRequest;
 const local = chrome.storage.local;
@@ -32,17 +33,23 @@ chrome.tabs.onUpdated.addListener((tabId, change, tab) => {
   }
 });
 chrome.tabs.onActivated.addListener(({ tabId }) => queue(() => checkTab(tabId)).catch(console.error));
+chrome.storage.onChanged.addListener((changes, area) => {
+  if (area === 'local' && changes.language) queue(refresh).catch(console.error);
+});
 chrome.tabs.onRemoved.addListener(tabId => session.remove('gate-' + tabId));
 chrome.runtime.onMessage.addListener((message, sender, respond) => {
   if (sender.id !== chrome.runtime.id) return false;
-  queue(() => handle(message, sender)).then(respond, error => respond({ error: error.message }));
+  queue(() => handle(message, sender)).then(respond, error => {
+    respond({ error: error.message, errorInfo: error.i18n });
+  });
   return true;
 });
 
 async function refresh() {
-  const { sites = EMPTY_SITES, access = {}, limits = MINUTES } = await local.get(['sites', 'access', 'limits']);
+  const { sites = EMPTY_SITES, access = {}, limits = MINUTES, waitSeconds = DEFAULT_WAIT_SECONDS } =
+    await local.get(['sites', 'access', 'limits', 'waitSeconds']);
   await syncAllowRules(sites, access);
-  return { sites, access, limits };
+  return { sites, access, limits, waitSeconds };
 }
 
 async function replaceRedirects(sites) {
@@ -103,7 +110,8 @@ async function updateBadge(sites, access, now) {
   const minutes = Math.ceil(remaining / 60_000);
   await chrome.action.setBadgeBackgroundColor({ color: '#30523b' });
   await chrome.action.setBadgeText({ text: String(minutes) });
-  await chrome.action.setTitle({ title: 'Chwila czytania · pozostało ok. ' + minutes + ' min' });
+  const { language } = await local.get('language');
+  await chrome.action.setTitle({ title: translator(language)('badgeTime', minutes) });
 
   // Alarms can run at most twice per minute. Line up the badge with the next
   // whole-minute change, while the separate access alarm handles expiration.
@@ -155,30 +163,65 @@ async function restoreTabs() {
   await returnToReading(blockedDomains(sites, access));
 }
 
+async function saveSiteConfiguration(config, sites, limits, waitSeconds = config.waitSeconds ?? DEFAULT_WAIT_SECONDS) {
+  const { sites: previous = EMPTY_SITES, access = {} } = config;
+  await replaceRedirects(sites);
+  try {
+    await local.set({ sites, limits, waitSeconds });
+  } catch (error) {
+    await replaceRedirects(previous);
+    throw error;
+  }
+  await syncAllowRules(sites, access);
+  await returnToReading(blockedDomains(sites, access));
+}
+
 async function handle(message, sender) {
   if (message.type === 'save-sites' && sender.url === chrome.runtime.getURL('options.html')) {
-    const { sites: previous = EMPTY_SITES, access = {}, limits = MINUTES } = await local.get(['sites', 'access', 'limits']);
-    const sites = message.sites;
-    const nextLimits = message.limits ? readLimits(message.limits) : limits;
-    await replaceRedirects(sites);
-    try {
-      await local.set({ sites, limits: nextLimits });
-    } catch (error) {
-      await replaceRedirects(previous);
-      throw error;
+    const config = await local.get(['sites', 'access', 'limits', 'waitSeconds']);
+    const { limits = MINUTES, waitSeconds = DEFAULT_WAIT_SECONDS } = config;
+    if (message.expectedSites !== undefined && (
+      JSON.stringify(message.expectedSites) !== JSON.stringify(config.sites ?? null)
+      || JSON.stringify(message.expectedLimits) !== JSON.stringify(limits)
+      || (message.expectedWaitSeconds !== undefined && message.expectedWaitSeconds !== waitSeconds)
+    )) {
+      throw appError('settingsConflict');
     }
-    await syncAllowRules(sites, access);
-    await returnToReading(blockedDomains(sites, access));
+    const nextLimits = message.limits ? readLimits(message.limits) : limits;
+    const nextWaitSeconds = message.waitSeconds === undefined ? waitSeconds : readWaitSeconds(message.waitSeconds);
+    await saveSiteConfiguration(config, message.sites, nextLimits, nextWaitSeconds);
     return {};
+  }
+
+  if (message.type === 'add-current-site' && sender.url === chrome.runtime.getURL('popup.html')) {
+    const { domain, group } = message;
+    if (typeof domain !== 'string' || normalizeDomain(domain) !== domain || typeof group !== 'string' || !Object.hasOwn(EMPTY_SITES, group)) {
+      throw appError('ruleInvalid');
+    }
+
+    const config = await local.get(['sites', 'access', 'limits', 'waitSeconds']);
+    const { sites = EMPTY_SITES, access = {}, limits = MINUTES } = config;
+    const fields = Object.fromEntries(Object.entries(sites).map(([key, domains]) => {
+      const next = domains.filter(item => key === group || item !== domain);
+      if (key === group && !next.includes(domain)) next.push(domain);
+      return [key, next.join('\n')];
+    }));
+    const nextSites = readSites(fields);
+    if (!(await chrome.permissions.contains({ origins: domainOrigins(domain) }))) {
+      throw appError('permissionMissing');
+    }
+
+    await saveSiteConfiguration(config, nextSites, limits);
+    return { group, active: sessionState(access[group], Date.now()) === 'active' };
   }
 
   const tabId = sender.tab?.id;
   if (tabId === undefined || !sender.url?.startsWith(chrome.runtime.getURL('reader.html?'))) {
-    throw new Error('Otwórz czytnik w karcie Chrome.');
+    throw appError('readerTab');
   }
   const reader = new URL(sender.url);
   const domain = reader.searchParams.get('site');
-  const { sites, access, limits } = await refresh();
+  const { sites, access, limits, waitSeconds } = await refresh();
   const group = groupFor(sites, domain);
   if (group === undefined) return {};
   if (group === 'block') return { group };
@@ -196,13 +239,13 @@ async function handle(message, sender) {
 
   const gateKey = 'gate-' + tabId;
   if (message.type === 'show') {
-    const readyAt = now + WAIT_MS;
+    const readyAt = now + waitSeconds * 1000;
     await session.set({ [gateKey]: { domain, readyAt } });
     return { group, readyAt, minutes };
   }
   const gate = (await session.get(gateKey))[gateKey];
   if (message.type !== 'enter' || gate?.domain !== domain || now < gate.readyAt) {
-    throw new Error('Odczekaj chwilę na czytanie i spróbuj ponownie.');
+    throw appError('gateNotReady');
   }
 
   access[group] = { ...newSession(group, now, minutes), startAt: now, domain, minutes };

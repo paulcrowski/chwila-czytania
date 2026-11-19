@@ -144,3 +144,32 @@
   .settings-toolbar { grid-template-columns: 1fr; }
   .settings-toolbar button { justify-self: start; }
 }
+
+.settings-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0 1rem;
+}
+
+.language-control {
+  margin-bottom: 0.65rem;
+}
+
+.language-control label {
+  color: var(--muted);
+}
+
+.language-control select {
+  padding: 0.35rem 0.5rem;
+  border: 1px solid var(--line);
+  border-radius: 0.4rem;
+  background: var(--paper);
+  color: var(--ink);
+  font: inherit;
+}
+
+#language-status {
+  margin: 0.35rem 0 0;
+}

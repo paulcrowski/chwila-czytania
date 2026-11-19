@@ -1,3 +1,5 @@
+import { appError } from './i18n.mjs';
+
 export function makeBook(title, text) {
   const words = /\S+/g;
   const pages = [];
@@ -10,7 +12,7 @@ export function makeBook(title, text) {
     }
     count++;
   }
-  if (!count) throw new Error('Plik jest pusty.');
+  if (!count) throw appError('emptyBook');
   pages.push(text.slice(pageStart).trim());
   return { title: title.replace(/\.txt$/i, ''), pages };
 }

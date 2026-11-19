@@ -108,3 +108,33 @@ textarea {
 .popup-actions { display: flex; justify-content: space-between; gap: 0.75rem; }
 .form-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 0.65rem; }
 #site-state { color: var(--muted); }
+
+.current-site {
+  display: grid;
+  gap: 0.45rem;
+  padding: 0.65rem 0 0.85rem;
+  border-block: 1px solid var(--line);
+}
+
+.current-site h2,
+.current-site p,
+.current-site label {
+  margin: 0;
+}
+
+.current-site h2 { font-size: 1rem; }
+.current-domain { font-weight: 650; }
+.current-site p { overflow-wrap: anywhere; }
+
+.current-site select {
+  width: 100%;
+  min-width: 0;
+  padding: 0.45rem 0.5rem;
+  border: 1px solid var(--line);
+  border-radius: 0.4rem;
+  background: var(--paper);
+  color: var(--ink);
+  font: inherit;
+}
+
+#rule-status { color: var(--muted); }

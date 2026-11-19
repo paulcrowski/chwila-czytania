@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Ustawienia · Chwila czytania</title>
+  <title data-i18n="settingsTitle">Ustawienia · Chwila czytania</title>
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="options.css">
   <script type="module" src="options.js"></script>
@@ -12,66 +12,86 @@
   <main>
     <header>
       <span>Chwila czytania</span>
-      <a href="reader.html">Otwórz książkę</a>
+      <a href="reader.html" data-i18n="openBook">Otwórz książkę</a>
     </header>
-    <h1>Ustawienia</h1>
+    <div class="settings-heading">
+      <h1 data-i18n="settings">Ustawienia</h1>
+      <div class="language-control">
+        <label for="language" data-i18n="language">Język dodatku</label>
+        <select id="language">
+          <option value="pl" lang="pl">Polski</option>
+          <option value="en" lang="en">English</option>
+        </select>
+        <p id="language-status" role="status" hidden></p>
+      </div>
+    </div>
     <form id="sites" aria-labelledby="sites-heading">
       <div class="settings-toolbar">
         <div>
-          <h2 id="sites-heading">Reguły stron</h2>
+          <h2 id="sites-heading" data-i18n="siteRules">Reguły stron</h2>
           <p id="site-state" role="status">Wczytywanie ustawień…</p>
         </div>
-        <button id="save" type="submit" disabled>Zapisz zmiany</button>
+        <button id="save" data-i18n="saveChanges" type="submit" disabled>Zapisz zmiany</button>
         <p id="site-status" role="status" hidden></p>
       </div>
 
-      <p class="domain-help">Wpisz domenę albo kilka po przecinku. Reguły obejmują też subdomeny.</p>
+      <p class="domain-help" data-i18n="domainHelp">Wpisz domenę albo kilka po przecinku. Reguły obejmują też subdomeny.</p>
 
       <fieldset data-group="block">
-        <legend>Zawsze blokuj</legend>
-        <p>Po otwarciu każdej z tych stron od razu zobaczysz książkę.</p>
-        <ul id="block-domains" class="domains" aria-label="Domeny ze stałą blokadą"></ul>
+        <legend data-i18n="block">Zawsze blokuj</legend>
+        <p data-i18n="blockHelp">Po otwarciu każdej z tych stron od razu zobaczysz książkę.</p>
+        <ul id="block-domains" class="domains" aria-label="Domeny ze stałą blokadą" data-i18n-aria-label="blockedDomains"></ul>
         <div class="domain-entry">
-          <input id="block-add" type="text" aria-label="Domeny do stałej blokady" placeholder="np. interia.pl" autocomplete="off" spellcheck="false">
-          <button type="button" class="add" aria-label="Dodaj domeny do stałej blokady">Dodaj</button>
+          <input id="block-add" type="text" aria-label="Domeny do stałej blokady" data-i18n-aria-label="domainForBlock" placeholder="np. interia.pl" data-i18n-placeholder="exampleBlock" autocomplete="off" spellcheck="false">
+          <button type="button" class="add" aria-label="Dodaj domeny do stałej blokady" data-i18n-aria-label="addToBlock" data-i18n="add">Dodaj</button>
         </div>
       </fieldset>
 
       <fieldset data-group="short">
-        <legend>Grupa 1</legend>
+        <legend data-i18n="group1">Grupa 1</legend>
         <label class="limit" for="short-minutes">
-          Limit dzienny
+          <span data-i18n="dailyLimit">Limit dzienny</span>
           <input id="short-minutes" type="number" min="1" max="1440" step="1" required aria-describedby="limits-note">
           <span>min</span>
         </label>
-        <ul id="short-domains" class="domains" aria-label="Domeny w grupie 1"></ul>
+        <ul id="short-domains" class="domains" aria-label="Domeny w grupie 1" data-i18n-aria-label="group1Domains"></ul>
         <div class="domain-entry">
-          <input id="short-add" type="text" aria-label="Domeny do grupy 1" placeholder="np. onet.pl" autocomplete="off" spellcheck="false">
-          <button type="button" class="add" aria-label="Dodaj domeny do grupy 1">Dodaj</button>
+          <input id="short-add" type="text" aria-label="Domeny do grupy 1" data-i18n-aria-label="domainForGroup1" placeholder="np. onet.pl" data-i18n-placeholder="exampleGroup1" autocomplete="off" spellcheck="false">
+          <button type="button" class="add" aria-label="Dodaj domeny do grupy 1" data-i18n-aria-label="addToGroup1" data-i18n="add">Dodaj</button>
         </div>
       </fieldset>
 
       <fieldset data-group="long">
-        <legend>Grupa 2</legend>
+        <legend data-i18n="group2">Grupa 2</legend>
         <label class="limit" for="long-minutes">
-          Limit dzienny
+          <span data-i18n="dailyLimit">Limit dzienny</span>
           <input id="long-minutes" type="number" min="1" max="1440" step="1" required aria-describedby="limits-note">
           <span>min</span>
         </label>
-        <ul id="long-domains" class="domains" aria-label="Domeny w grupie 2"></ul>
+        <ul id="long-domains" class="domains" aria-label="Domeny w grupie 2" data-i18n-aria-label="group2Domains"></ul>
         <div class="domain-entry">
-          <input id="long-add" type="text" aria-label="Domeny do grupy 2" placeholder="np. gazeta.pl" autocomplete="off" spellcheck="false">
-          <button type="button" class="add" aria-label="Dodaj domeny do grupy 2">Dodaj</button>
+          <input id="long-add" type="text" aria-label="Domeny do grupy 2" data-i18n-aria-label="domainForGroup2" placeholder="np. gazeta.pl" data-i18n-placeholder="exampleGroup2" autocomplete="off" spellcheck="false">
+          <button type="button" class="add" aria-label="Dodaj domeny do grupy 2" data-i18n-aria-label="addToGroup2" data-i18n="add">Dodaj</button>
         </div>
       </fieldset>
 
-      <p id="limits-note">Każda grupa ma jedną wspólną sesję dziennie. Po 30 sekundach z książką możesz wejść na portal i uruchomić minutnik, który działa też w tle. Zmiana limitu obowiązuje od następnej sesji.</p>
+      <p id="limits-note" data-i18n="limitsNote">Każda grupa ma jedną wspólną sesję dziennie. Minutnik działa też w tle. Zmiana limitu obowiązuje od następnej sesji.</p>
+
+      <fieldset>
+        <legend data-i18n="waitTitle">Czas przed wejściem na portal</legend>
+        <label class="limit" for="wait-seconds">
+          <span data-i18n="showAfter">Pokaż przycisk po</span>
+          <input id="wait-seconds" type="number" min="0" step="1" required aria-describedby="wait-note">
+          <span>s</span>
+        </label>
+        <p id="wait-note" data-i18n="waitNote">Dotyczy obu grup czasowych. Przy 0 przycisk jest dostępny od razu. Kliknięcie uruchamia minutnik.</p>
+      </fieldset>
     </form>
 
     <section class="book-settings" aria-labelledby="book-heading">
-      <h2 id="book-heading">Książka</h2>
+      <h2 id="book-heading" data-i18n="book">Książka</h2>
       <p id="current-book"></p>
-      <label for="book">Wczytaj książkę lub fragment z pliku TXT (UTF-8).</label>
+      <label for="book" data-i18n="importBook">Wczytaj książkę lub fragment z pliku TXT (UTF-8).</label>
       <input id="book" type="file" accept=".txt,text/plain">
       <p id="book-status" role="status"></p>
     </section>

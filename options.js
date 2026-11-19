@@ -1,20 +1,29 @@
-import { EMPTY_SITES, EXAMPLE_SITES, MINUTES, readLimits, readSites } from './model.mjs';
-import { SAMPLE } from './sample.mjs';
+import { DEFAULT_WAIT_SECONDS, EMPTY_SITES, EXAMPLE_SITES, MINUTES, domainOrigins, readLimits, readSites, readWaitSeconds } from './model.mjs';
+import { sampleFor } from './sample.mjs';
+import { appError, checkResponse, errorText, localizeDocument, translator } from './i18n.mjs';
 import { makeBook } from './book.mjs';
 
 const local = chrome.storage.local;
-const { sites, limits = MINUTES, book = SAMPLE } = await local.get(['sites', 'limits', 'book']);
+const { sites, limits = MINUTES, book: savedBook, language = 'pl', waitSeconds = DEFAULT_WAIT_SECONDS } =
+  await local.get(['sites', 'limits', 'book', 'language', 'waitSeconds']);
+let currentLanguage = language;
+let current = savedBook;
+let t = translator(language);
 let savedSites = sites;
 let savedLimits = limits;
+let savedWaitSeconds = waitSeconds;
 let draftSites = structuredClone(sites ?? EXAMPLE_SITES);
 let saving = false;
 
 const save = document.querySelector('#save');
 const siteStatus = document.querySelector('#site-status');
 const siteState = document.querySelector('#site-state');
+const waitInput = document.querySelector('#wait-seconds');
 const bookInput = document.querySelector('#book');
 const bookStatus = document.querySelector('#book-status');
 const currentBook = document.querySelector('#current-book');
+const languageSelect = document.querySelector('#language');
+const languageStatus = document.querySelector('#language-status');
 
 const groups = Object.keys(EMPTY_SITES);
 const fields = Object.fromEntries(groups.map(group => [group, {
@@ -39,11 +48,12 @@ function updateState() {
   const minutes = limitValues();
   const dirty = !savedSites
     || groups.some(group => fields[group].entry.value.trim() || draftSites[group].join() !== savedSites[group].join())
-    || Object.keys(MINUTES).some(group => minutes[group] !== String(savedLimits[group]));
+    || Object.keys(MINUTES).some(group => minutes[group] !== String(savedLimits[group]))
+    || waitInput.value !== String(savedWaitSeconds);
 
   save.disabled = saving || !dirty;
   siteState.toggleAttribute('data-dirty', dirty && !saving);
-  siteState.textContent = saving ? 'Zapisywanie…' : dirty ? 'Niezapisane zmiany' : 'Zapisano ustawienia';
+  siteState.textContent = t(saving ? 'saving' : dirty ? 'unsaved' : 'saved');
 }
 
 function status(message = '') {
@@ -65,7 +75,7 @@ function renderGroup(group) {
     name.textContent = domain;
     remove.type = 'button';
     remove.textContent = '×';
-    remove.setAttribute('aria-label', 'Usuń ' + domain);
+    remove.setAttribute('aria-label', t('removeDomain', domain));
     remove.addEventListener('click', () => {
       draftSites[group].splice(index, 1);
       renderGroup(group);
@@ -90,24 +100,27 @@ function addDomains(group) {
     renderGroup(group);
     onChange();
   } catch (error) {
-    status(error.message);
+    status(errorText(t, error));
   }
   entry.focus();
 }
 
-function confirmation(nextSites, nextLimits) {
+function confirmation(nextSites, nextLimits, nextWaitSeconds) {
   const changes = [];
   for (const group of groups) {
     const previous = savedSites?.[group] ?? [];
     const added = nextSites[group].filter(domain => !previous.includes(domain));
     if (!added.length) continue;
-    const scope = group === 'block' ? 'stała blokada' : nextLimits[group] + ' min dziennie';
+    const scope = group === 'block' ? t('permanentBlock') : t('minutesPerDay', nextLimits[group]);
     changes.push(added.join(', ') + ' · ' + scope);
   }
   const removed = Object.values(savedSites ?? EMPTY_SITES).flat().filter(domain => !Object.values(nextSites).flat().includes(domain));
-  if (removed.length) changes.push(removed.join(', ') + ' · usunięto z reguł');
-  for (const [group, name] of [['short', 'Grupa 1'], ['long', 'Grupa 2']]) {
-    if (nextLimits[group] !== savedLimits[group]) changes.push(name + ' · nowy limit ' + nextLimits[group] + ' min');
+  if (removed.length) changes.push(t('domainRemoved', removed.join(', ')));
+  for (const [group, name] of [['short', 'group1'], ['long', 'group2']]) {
+    if (nextLimits[group] !== savedLimits[group]) changes.push(t('newLimit', t(name), nextLimits[group]));
+  }
+  if (nextWaitSeconds !== savedWaitSeconds) {
+    changes.push(nextWaitSeconds === 0 ? t('noWait') : t('newWait', nextWaitSeconds));
   }
   return changes.length ? changes.join('. ') + '.' : '';
 }
@@ -125,10 +138,37 @@ for (const group of groups) {
     addDomains(group);
   });
   fieldset.querySelector('.add').addEventListener('click', () => addDomains(group));
-  renderGroup(group);
 }
-currentBook.textContent = 'W czytniku: ' + book.title;
-updateState();
+waitInput.value = waitSeconds;
+waitInput.addEventListener('input', onChange);
+function applyLanguage() {
+  t = translator(currentLanguage);
+  localizeDocument(currentLanguage, t);
+  languageSelect.value = currentLanguage;
+  for (const group of groups) renderGroup(group);
+  currentBook.textContent = t('currentBook', (current ?? sampleFor(currentLanguage)).title);
+  status();
+  bookStatus.textContent = '';
+  updateState();
+}
+
+languageSelect.addEventListener('change', async () => {
+  const nextLanguage = languageSelect.value;
+  languageSelect.disabled = true;
+  languageStatus.hidden = true;
+  try {
+    await local.set({ language: nextLanguage });
+    currentLanguage = nextLanguage;
+    applyLanguage();
+  } catch {
+    languageSelect.value = currentLanguage;
+    languageStatus.textContent = t('languageError');
+    languageStatus.hidden = false;
+  } finally {
+    languageSelect.disabled = false;
+  }
+});
+applyLanguage();
 
 document.querySelector('#sites').addEventListener('submit', async event => {
   event.preventDefault();
@@ -136,23 +176,33 @@ document.querySelector('#sites').addEventListener('submit', async event => {
   try {
     const nextSites = pendingSites(() => true);
     const nextLimits = readLimits(limitValues());
+    const nextWaitSeconds = readWaitSeconds(waitInput.value);
     saving = true;
+    waitInput.disabled = true;
     for (const field of Object.values(fields)) field.fieldset.disabled = true;
     updateState();
     status();
 
-    const origins = Object.values(nextSites).flat().flatMap(domain => [
-      'http://*.' + domain + '/*', 'https://*.' + domain + '/*',
-    ]);
+    const origins = Object.values(nextSites).flat().flatMap(domainOrigins);
     if (origins.length && !(await chrome.permissions.request({ origins }))) {
-      throw new Error('Zezwól Chrome na obsługę wpisanych domen, aby zapisać reguły.');
+      throw appError('savePermission');
     }
-    const response = await chrome.runtime.sendMessage({ type: 'save-sites', sites: nextSites, limits: nextLimits });
-    if (response.error) throw new Error(response.error);
+    const response = await chrome.runtime.sendMessage({
+      type: 'save-sites',
+      sites: nextSites,
+      limits: nextLimits,
+      waitSeconds: nextWaitSeconds,
+      expectedSites: savedSites ?? null,
+      expectedLimits: savedLimits,
+      expectedWaitSeconds: savedWaitSeconds,
+    });
+    checkResponse(response);
 
-    status(confirmation(nextSites, nextLimits));
+    status(confirmation(nextSites, nextLimits, nextWaitSeconds));
     savedSites = nextSites;
     savedLimits = nextLimits;
+    savedWaitSeconds = nextWaitSeconds;
+    waitInput.value = nextWaitSeconds;
     draftSites = structuredClone(nextSites);
     for (const group of groups) {
       const { entry, minutes } = fields[group];
@@ -161,9 +211,10 @@ document.querySelector('#sites').addEventListener('submit', async event => {
       renderGroup(group);
     }
   } catch (error) {
-    status('Zapis nie powiódł się. ' + error.message);
+    status(t('saveError', errorText(t, error)));
   } finally {
     saving = false;
+    waitInput.disabled = false;
     for (const field of Object.values(fields)) field.fieldset.disabled = false;
     updateState();
   }
@@ -174,13 +225,14 @@ bookInput.addEventListener('change', async () => {
   if (!file) return;
   bookInput.disabled = true;
   try {
-    if (!file.name.toLowerCase().endsWith('.txt')) throw new Error('Wybierz plik z rozszerzeniem .txt.');
+    if (!file.name.toLowerCase().endsWith('.txt')) throw appError('txtOnly');
     const book = makeBook(file.name, await file.text());
     await local.set({ book, page: 0 });
-    currentBook.textContent = 'W czytniku: ' + book.title;
-    bookStatus.textContent = 'Książka jest gotowa do czytania.';
+    current = book;
+    currentBook.textContent = t('currentBook', book.title);
+    bookStatus.textContent = t('bookReady');
   } catch (error) {
-    bookStatus.textContent = error.message;
+    bookStatus.textContent = errorText(t, error);
   } finally {
     bookInput.value = '';
     bookInput.disabled = false;

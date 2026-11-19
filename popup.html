@@ -9,11 +9,23 @@
 <body class="popup">
   <main>
     <h1>Chwila czytania</h1>
-    <p id="idle">Minutnik jest wyłączony.</p>
+    <form id="current-site" class="current-site" hidden>
+      <h2 data-i18n="addCurrent">Dodaj tę stronę</h2>
+      <p id="current-domain" class="current-domain"></p>
+      <label for="current-rule" data-i18n="rule">Reguła</label>
+      <select id="current-rule" aria-describedby="current-domain">
+        <option value="block">Zawsze blokuj</option>
+        <option value="short">Grupa 1</option>
+        <option value="long">Grupa 2</option>
+      </select>
+      <button id="save-rule" data-i18n="saveRule" type="submit">Zapisz regułę</button>
+      <p id="rule-status" role="status" hidden></p>
+    </form>
+    <p id="idle" data-i18n="timerIdle">Minutnik jest wyłączony.</p>
     <ul id="sessions" class="sessions" hidden></ul>
     <div class="popup-actions">
-      <a href="reader.html" target="_blank" rel="noopener">Otwórz książkę</a>
-      <a href="options.html" target="_blank" rel="noopener">Ustawienia</a>
+      <a href="reader.html" target="_blank" rel="noopener" data-i18n="openBook">Otwórz książkę</a>
+      <a href="options.html" target="_blank" rel="noopener" data-i18n="settings">Ustawienia</a>
     </div>
   </main>
 </body>
