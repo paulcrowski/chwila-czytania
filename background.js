@@ -17,13 +17,21 @@ function queue(operation) {
   return result;
 }
 
-chrome.runtime.onInstalled.addListener(() => queue(refresh).catch(console.error));
-chrome.runtime.onStartup.addListener(() => queue(refresh).catch(console.error));
+chrome.runtime.onInstalled.addListener(() => queue(restoreTabs).catch(console.error));
+chrome.runtime.onStartup.addListener(() => queue(restoreTabs).catch(console.error));
 chrome.alarms.onAlarm.addListener(alarm => {
   if (alarm.name === BADGE_ALARM || alarm.name.startsWith('access-')) {
     queue(refresh).catch(console.error);
   }
 });
+// Network rules cover requests. Tab events also catch restored or cached pages
+// and navigations within a site that do not make a main-frame request.
+chrome.tabs.onUpdated.addListener((tabId, change, tab) => {
+  if ((change.url || change.status === 'complete') && isWebUrl(tab.url)) {
+    queue(() => checkTab(tabId)).catch(console.error);
+  }
+});
+chrome.tabs.onActivated.addListener(({ tabId }) => queue(() => checkTab(tabId)).catch(console.error));
 chrome.tabs.onRemoved.addListener(tabId => session.remove('gate-' + tabId));
 chrome.runtime.onMessage.addListener((message, sender, respond) => {
   if (sender.id !== chrome.runtime.id) return false;
@@ -107,19 +115,44 @@ async function updateBadge(sites, access, now) {
   }
 }
 
+function isWebUrl(url) {
+  return url?.startsWith('https://') || url?.startsWith('http://');
+}
+
+function blockedDomains(sites, access) {
+  const now = Date.now();
+  return Object.entries(sites).flatMap(([group, domains]) =>
+    group === 'block' || sessionState(access[group], now) !== 'active' ? domains : []
+  );
+}
+
+async function redirectTab(tab, domains) {
+  if (!isWebUrl(tab?.url) || (tab.pendingUrl && tab.pendingUrl !== tab.url)) return;
+  const url = new URL(tab.url);
+  const domain = domains.find(candidate => inDomain(url.hostname, candidate));
+  if (domain) {
+    await chrome.tabs.update(tab.id, {
+      url: chrome.runtime.getURL(readerPath(domain)) + '#' + url.href,
+    });
+  }
+}
+
 async function returnToReading(domains) {
   if (!domains.length) return;
   const tabs = await chrome.tabs.query({});
-  await Promise.allSettled(tabs.map(async tab => {
-    if (!tab.url?.startsWith('http')) return;
-    const url = new URL(tab.url);
-    const domain = domains.find(candidate => inDomain(url.hostname, candidate));
-    if (domain) {
-      await chrome.tabs.update(tab.id, {
-        url: chrome.runtime.getURL(readerPath(domain)) + '#' + url.href,
-      });
-    }
-  }));
+  await Promise.allSettled(tabs.map(tab => redirectTab(tab, domains)));
+}
+
+async function checkTab(tabId) {
+  const tab = await chrome.tabs.get(tabId).catch(() => undefined);
+  if (!isWebUrl(tab?.url)) return;
+  const { sites = EMPTY_SITES, access = {} } = await local.get(['sites', 'access']);
+  await redirectTab(tab, blockedDomains(sites, access));
+}
+
+async function restoreTabs() {
+  const { sites, access } = await refresh();
+  await returnToReading(blockedDomains(sites, access));
 }
 
 async function handle(message, sender) {
@@ -135,6 +168,7 @@ async function handle(message, sender) {
       throw error;
     }
     await syncAllowRules(sites, access);
+    await returnToReading(blockedDomains(sites, access));
     return {};
   }
 
