@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Ustawienia · Chwila czytania</title>
+  <link rel="stylesheet" href="style.css">
+  <script type="module" src="options.js"></script>
+</head>
+<body>
+  <main>
+    <header>
+      <span>Chwila czytania</span>
+      <a href="reader.html">Czytnik</a>
+    </header>
+    <h1>Ustawienia</h1>
+    <section class="settings" aria-labelledby="book-heading">
+      <h2 id="book-heading">Książka</h2>
+      <p id="current-book"></p>
+      <label for="book">Wczytaj książkę lub fragment w formacie TXT (UTF-8).</label>
+      <input id="book" type="file" accept=".txt,text/plain">
+      <p id="book-status" role="status"></p>
+    </section>
+    <form class="settings" id="sites">
+      <h2>Strony</h2>
+      <p>Wpisz domeny w osobnych wierszach albo po przecinku. Każda grupa czasowa ma jedną sesję dziennie, wspólną dla wszystkich swoich stron.</p>
+      <div class="group">
+        <label for="block">Zawsze blokuj</label>
+        <textarea id="block" rows="2" spellcheck="false"></textarea>
+      </div>
+      <div class="group">
+        <label for="short">10 minut dziennie</label>
+        <textarea id="short" rows="2" spellcheck="false"></textarea>
+      </div>
+      <div class="group">
+        <label for="long">15 minut dziennie</label>
+        <textarea id="long" rows="2" spellcheck="false"></textarea>
+      </div>
+      <div class="form-actions">
+        <button id="save" type="submit" disabled>Zapisz strony</button>
+        <span id="site-state" role="status"></span>
+      </div>
+      <p id="site-status" role="status"></p>
+    </form>
+  </main>
+</body>
+</html>

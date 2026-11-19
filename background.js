@@ -1,0 +1,176 @@
+import {
+  WAIT_MS, BUCKETS, EMPTY_SITES, MINUTES, groupFor, inDomain, newSession, portalUrl,
+  readerPath, redirectRules, sessionState,
+} from './model.mjs';
+
+const dnr = chrome.declarativeNetRequest;
+const local = chrome.storage.local;
+const session = chrome.storage.session;
+const alarmName = group => 'access-' + group;
+const BADGE_ALARM = 'session-badge';
+const allowId = group => 1000 + BUCKETS[group];
+let pending = Promise.resolve();
+
+function queue(operation) {
+  const result = pending.then(operation);
+  pending = result.catch(() => {});
+  return result;
+}
+
+chrome.runtime.onInstalled.addListener(() => queue(refresh).catch(console.error));
+chrome.runtime.onStartup.addListener(() => queue(refresh).catch(console.error));
+chrome.alarms.onAlarm.addListener(alarm => {
+  if (alarm.name === BADGE_ALARM || alarm.name.startsWith('access-')) {
+    queue(refresh).catch(console.error);
+  }
+});
+chrome.tabs.onRemoved.addListener(tabId => session.remove('gate-' + tabId));
+chrome.runtime.onMessage.addListener((message, sender, respond) => {
+  if (sender.id !== chrome.runtime.id) return false;
+  queue(() => handle(message, sender)).then(respond, error => respond({ error: error.message }));
+  return true;
+});
+
+async function refresh() {
+  const { sites = EMPTY_SITES, access = {} } = await local.get(['sites', 'access']);
+  await syncAllowRules(sites, access);
+  return { sites, access };
+}
+
+async function replaceRedirects(sites) {
+  const previous = await dnr.getDynamicRules();
+  await dnr.updateDynamicRules({
+    removeRuleIds: previous.map(rule => rule.id),
+    addRules: redirectRules(sites, path => chrome.runtime.getURL(path)),
+  });
+}
+
+async function syncAllowRules(sites, access) {
+  const now = Date.now();
+  const previous = await dnr.getSessionRules();
+  const allowed = [];
+  for (const group of Object.keys(MINUTES)) {
+    const current = access[group];
+    if (sessionState(current, now) === 'active' && sites[group].length) {
+      await chrome.alarms.create(alarmName(group), { when: current.endAt });
+      allowed.push({
+        id: allowId(group),
+        priority: 2,
+        action: { type: 'allow' },
+        condition: { requestDomains: sites[group], resourceTypes: ['main_frame'] },
+      });
+    } else {
+      await chrome.alarms.clear(alarmName(group));
+    }
+  }
+
+  const managed = previous.filter(rule => Object.keys(MINUTES).some(group => allowId(group) === rule.id));
+  await dnr.updateSessionRules({ removeRuleIds: managed.map(rule => rule.id), addRules: allowed });
+
+  await updateBadge(sites, access, now);
+
+  for (const group of Object.keys(MINUTES)) {
+    const current = access[group];
+    if (current && !current.closed && sessionState(current, now) !== 'active') {
+      await returnToReading(sites[group]);
+      current.closed = true;
+      await local.set({ access });
+    }
+  }
+}
+
+async function updateBadge(sites, access, now) {
+  const endTimes = Object.keys(MINUTES)
+    .filter(group => sites[group].length && sessionState(access[group], now) === 'active')
+    .map(group => access[group].endAt);
+
+  if (!endTimes.length) {
+    await chrome.alarms.clear(BADGE_ALARM);
+    await chrome.action.setBadgeText({ text: '' });
+    await chrome.action.setTitle({ title: 'Chwila czytania' });
+    return;
+  }
+
+  const remaining = Math.min(...endTimes) - now;
+  const minutes = Math.ceil(remaining / 60_000);
+  await chrome.action.setBadgeBackgroundColor({ color: '#30523b' });
+  await chrome.action.setBadgeText({ text: String(minutes) });
+  await chrome.action.setTitle({ title: 'Chwila czytania · pozostało ok. ' + minutes + ' min' });
+
+  // Alarms can run at most twice per minute. Line up the badge with the next
+  // whole-minute change, while the separate access alarm handles expiration.
+  const untilChange = remaining - (minutes - 1) * 60_000;
+  if (minutes > 1) {
+    await chrome.alarms.create(BADGE_ALARM, { when: now + Math.max(30_000, untilChange + 1) });
+  } else {
+    await chrome.alarms.clear(BADGE_ALARM);
+  }
+}
+
+async function returnToReading(domains) {
+  if (!domains.length) return;
+  const tabs = await chrome.tabs.query({});
+  await Promise.allSettled(tabs.map(async tab => {
+    if (!tab.url?.startsWith('http')) return;
+    const url = new URL(tab.url);
+    const domain = domains.find(candidate => inDomain(url.hostname, candidate));
+    if (domain) {
+      await chrome.tabs.update(tab.id, {
+        url: chrome.runtime.getURL(readerPath(domain)) + '#' + url.href,
+      });
+    }
+  }));
+}
+
+async function handle(message, sender) {
+  if (message.type === 'save-sites' && sender.url === chrome.runtime.getURL('options.html')) {
+    const { sites: previous = EMPTY_SITES, access = {} } = await local.get(['sites', 'access']);
+    const sites = message.sites;
+    await replaceRedirects(sites);
+    try {
+      await local.set({ sites });
+    } catch (error) {
+      await replaceRedirects(previous);
+      throw error;
+    }
+    await syncAllowRules(sites, access);
+    return {};
+  }
+
+  const tabId = sender.tab?.id;
+  if (tabId === undefined || !sender.url?.startsWith(chrome.runtime.getURL('reader.html?'))) {
+    throw new Error('Otwórz czytnik w karcie Chrome.');
+  }
+  const reader = new URL(sender.url);
+  const domain = reader.searchParams.get('site');
+  const { sites, access } = await refresh();
+  const group = groupFor(sites, domain);
+  if (group === undefined) return {};
+  if (group === 'block') return { group };
+
+  const now = Date.now();
+  const state = sessionState(access[group], now);
+  if (state === 'used') return { group, used: true };
+  const target = portalUrl(reader.hash.slice(1), domain);
+  if (state === 'active') {
+    if (message.type === 'enter') return { url: target };
+    return { group, readyAt: now, endAt: access[group].endAt };
+  }
+
+  const gateKey = 'gate-' + tabId;
+  if (message.type === 'show') {
+    const readyAt = now + WAIT_MS;
+    await session.set({ [gateKey]: { domain, readyAt } });
+    return { group, readyAt };
+  }
+  const gate = (await session.get(gateKey))[gateKey];
+  if (message.type !== 'enter' || gate?.domain !== domain || now < gate.readyAt) {
+    throw new Error('Odczekaj chwilę na czytanie i spróbuj ponownie.');
+  }
+
+  access[group] = { ...newSession(group, now), startAt: now, domain };
+  await local.set({ access });
+  await syncAllowRules(sites, access);
+  await session.remove(gateKey);
+  return { url: target };
+}
