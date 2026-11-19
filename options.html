@@ -5,43 +5,76 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Ustawienia · Chwila czytania</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="options.css">
   <script type="module" src="options.js"></script>
 </head>
-<body>
+<body class="settings-page">
   <main>
     <header>
       <span>Chwila czytania</span>
-      <a href="reader.html">Czytnik</a>
+      <a href="reader.html">Otwórz książkę</a>
     </header>
     <h1>Ustawienia</h1>
-    <section class="settings" aria-labelledby="book-heading">
+    <form id="sites" aria-labelledby="sites-heading">
+      <div class="settings-toolbar">
+        <div>
+          <h2 id="sites-heading">Reguły stron</h2>
+          <p id="site-state" role="status">Wczytywanie ustawień…</p>
+        </div>
+        <button id="save" type="submit" disabled>Zapisz zmiany</button>
+        <p id="site-status" role="status" hidden></p>
+      </div>
+
+      <p class="domain-help">Wpisz domenę albo kilka po przecinku. Reguły obejmują też subdomeny.</p>
+
+      <fieldset data-group="block">
+        <legend>Zawsze blokuj</legend>
+        <p>Po otwarciu każdej z tych stron od razu zobaczysz książkę.</p>
+        <ul id="block-domains" class="domains" aria-label="Domeny ze stałą blokadą"></ul>
+        <div class="domain-entry">
+          <input id="block-add" type="text" aria-label="Domeny do stałej blokady" placeholder="np. interia.pl" autocomplete="off" spellcheck="false">
+          <button type="button" class="add" aria-label="Dodaj domeny do stałej blokady">Dodaj</button>
+        </div>
+      </fieldset>
+
+      <fieldset data-group="short">
+        <legend>Grupa 1</legend>
+        <label class="limit" for="short-minutes">
+          Limit dzienny
+          <input id="short-minutes" type="number" min="1" max="1440" step="1" required aria-describedby="limits-note">
+          <span>min</span>
+        </label>
+        <ul id="short-domains" class="domains" aria-label="Domeny w grupie 1"></ul>
+        <div class="domain-entry">
+          <input id="short-add" type="text" aria-label="Domeny do grupy 1" placeholder="np. onet.pl" autocomplete="off" spellcheck="false">
+          <button type="button" class="add" aria-label="Dodaj domeny do grupy 1">Dodaj</button>
+        </div>
+      </fieldset>
+
+      <fieldset data-group="long">
+        <legend>Grupa 2</legend>
+        <label class="limit" for="long-minutes">
+          Limit dzienny
+          <input id="long-minutes" type="number" min="1" max="1440" step="1" required aria-describedby="limits-note">
+          <span>min</span>
+        </label>
+        <ul id="long-domains" class="domains" aria-label="Domeny w grupie 2"></ul>
+        <div class="domain-entry">
+          <input id="long-add" type="text" aria-label="Domeny do grupy 2" placeholder="np. gazeta.pl" autocomplete="off" spellcheck="false">
+          <button type="button" class="add" aria-label="Dodaj domeny do grupy 2">Dodaj</button>
+        </div>
+      </fieldset>
+
+      <p id="limits-note">Każda grupa ma jedną wspólną sesję dziennie. Po 30 sekundach z książką możesz wejść na portal i uruchomić minutnik, który działa też w tle. Zmiana limitu obowiązuje od następnej sesji.</p>
+    </form>
+
+    <section class="book-settings" aria-labelledby="book-heading">
       <h2 id="book-heading">Książka</h2>
       <p id="current-book"></p>
-      <label for="book">Wczytaj książkę lub fragment w formacie TXT (UTF-8).</label>
+      <label for="book">Wczytaj książkę lub fragment z pliku TXT (UTF-8).</label>
       <input id="book" type="file" accept=".txt,text/plain">
       <p id="book-status" role="status"></p>
     </section>
-    <form class="settings" id="sites">
-      <h2>Strony</h2>
-      <p>Wpisz domeny w osobnych wierszach albo po przecinku. Każda grupa czasowa ma jedną sesję dziennie, wspólną dla wszystkich swoich stron.</p>
-      <div class="group">
-        <label for="block">Zawsze blokuj</label>
-        <textarea id="block" rows="2" spellcheck="false"></textarea>
-      </div>
-      <div class="group">
-        <label for="short">10 minut dziennie</label>
-        <textarea id="short" rows="2" spellcheck="false"></textarea>
-      </div>
-      <div class="group">
-        <label for="long">15 minut dziennie</label>
-        <textarea id="long" rows="2" spellcheck="false"></textarea>
-      </div>
-      <div class="form-actions">
-        <button id="save" type="submit" disabled>Zapisz strony</button>
-        <span id="site-state" role="status"></span>
-      </div>
-      <p id="site-status" role="status"></p>
-    </form>
   </main>
 </body>
 </html>

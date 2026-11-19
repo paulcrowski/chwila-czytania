@@ -1,5 +1,6 @@
 export const WAIT_MS = 30_000;
 export const MINUTES = { short: 10, long: 15 };
+export const MAX_MINUTES = 1440;
 export const BUCKETS = { block: 0, short: 1, long: 2 };
 export const EMPTY_SITES = { block: [], short: [], long: [] };
 export const EXAMPLE_SITES = {
@@ -27,6 +28,19 @@ export function readSites(fields) {
   }
   if (existing.length > 100) throw new Error('Prototyp obsługuje do 100 domen.');
   return sites;
+}
+
+export function readLimits(values) {
+  const limits = {};
+  for (const group of Object.keys(MINUTES)) {
+    const raw = String(values[group] ?? '').trim();
+    const minutes = Number(raw);
+    if (!/^\d+$/.test(raw) || minutes < 1 || minutes > MAX_MINUTES) {
+      throw new Error('Podaj pełną liczbę minut od 1 do ' + MAX_MINUTES + '.');
+    }
+    limits[group] = minutes;
+  }
+  return limits;
 }
 
 export function inDomain(host, domain) {
@@ -71,12 +85,12 @@ export function dayKey(date) {
   return [date.getFullYear(), date.getMonth() + 1, date.getDate()].join('-');
 }
 
-export function newSession(group, now) {
+export function newSession(group, now, minutes = MINUTES[group]) {
   const midnight = new Date(now);
   midnight.setHours(24, 0, 0, 0);
   return {
     day: dayKey(new Date(now)),
-    endAt: Math.min(now + MINUTES[group] * 60_000, +midnight),
+    endAt: Math.min(now + minutes * 60_000, +midnight),
     closed: false,
   };
 }

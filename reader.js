@@ -1,4 +1,3 @@
-import { MINUTES } from './model.mjs';
 import { SAMPLE } from './sample.mjs';
 
 const local = chrome.storage.local;
@@ -48,7 +47,7 @@ function renderAccess(result, domain) {
   } else if (result.group === 'block') {
     access.textContent = domain + ' · stała blokada';
   } else if (result.used) {
-    access.textContent = domain + ' · dzisiejsze ' + MINUTES[result.group] + ' min już minęło.';
+    access.textContent = domain + ' · dzisiejsze ' + result.minutes + ' min już minęło.';
   } else if (result.readyAt) {
     const update = () => {
       const seconds = Math.max(0, Math.ceil((result.readyAt - Date.now()) / 1000));
@@ -58,7 +57,7 @@ function renderAccess(result, domain) {
         enter.textContent = 'Otwórz za ' + seconds + ' s';
         setTimeout(update, 250);
       } else {
-        access.textContent = result.endAt ? domain + ' · sesja już trwa.' : domain + ' · po kliknięciu masz ' + MINUTES[result.group] + ' min.';
+        access.textContent = result.endAt ? domain + ' · sesja już trwa.' : domain + ' · po kliknięciu masz ' + result.minutes + ' min.';
         enter.hidden = false;
         enter.disabled = false;
         enter.textContent = 'Otwórz portal';

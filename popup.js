@@ -12,9 +12,10 @@ function render() {
   const { access = {}, sites = EMPTY_SITES } = settings;
   const now = Date.now();
   const rows = [];
-  for (const [group, minutes] of Object.entries(MINUTES)) {
+  for (const group of Object.keys(MINUTES)) {
     const session = access[group];
     if (!sites[group].length || sessionState(session, now) !== 'active') continue;
+    const minutes = session.minutes ?? MINUTES[group];
 
     const remaining = Math.ceil((session.endAt - now) / 1000);
     const elapsed = Math.max(0, Math.floor((now - (session.startAt ?? session.endAt - minutes * 60_000)) / 1000));

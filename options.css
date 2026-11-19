@@ -1,0 +1,146 @@
+.settings-page main {
+  width: min(100% - 2rem, 41rem);
+}
+
+.settings-page h1 {
+  margin: 2.1rem 0 1.4rem;
+}
+
+.settings-toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.45rem 1rem;
+  padding: 0.8rem 0 0.9rem;
+  border-bottom: 1px solid var(--line);
+  background: var(--paper);
+}
+
+.settings-toolbar h2,
+.settings-toolbar p,
+.settings-page fieldset p {
+  margin: 0;
+}
+
+#site-status {
+  grid-column: 1 / -1;
+  overflow-wrap: anywhere;
+}
+
+#site-state,
+.domain-help,
+.settings-page fieldset p,
+#limits-note,
+#current-book {
+  color: var(--muted);
+}
+
+#site-state[data-dirty] {
+  font-weight: 650;
+  color: var(--ink);
+}
+
+.settings-page fieldset {
+  min-width: 0;
+  margin: 1.2rem 0 0;
+  border: 0;
+  padding: 0 0 1rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.settings-page legend {
+  padding: 0;
+  font-size: 1.1rem;
+  font-weight: 650;
+}
+
+.settings-page .limit {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.45rem;
+  margin: 0.35rem 0;
+}
+
+.domain-entry {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.5rem;
+  max-width: 28rem;
+}
+
+.domain-entry input,
+.limit input {
+  min-width: 0;
+  padding: 0.42rem 0.6rem;
+  border: 1px solid var(--line);
+  border-radius: 0.4rem;
+  background: var(--paper);
+  color: var(--ink);
+  font: inherit;
+}
+
+.limit input {
+  width: 5.2rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.domains {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0.7rem 0;
+  padding: 0;
+  list-style: none;
+}
+
+.domains:empty { display: none; }
+.domains:empty + .domain-entry { margin-top: 0.7rem; }
+
+.domains li {
+  display: flex;
+  align-items: center;
+  gap: 0.15rem;
+  max-width: 100%;
+  min-width: 0;
+  padding: 0 0.12rem 0 0.65rem;
+  border: 1px solid var(--line);
+  border-radius: 0.4rem;
+  overflow-wrap: anywhere;
+}
+
+.domains button,
+.domain-entry button {
+  background: transparent;
+  color: var(--accent);
+}
+
+.domains button {
+  padding: 0;
+  border-color: transparent;
+  min-width: 2rem;
+  min-height: 2rem;
+  font-size: 1.2rem;
+}
+
+#limits-note {
+  margin: 0.8rem 0 0;
+  max-width: 60ch;
+}
+
+.book-settings {
+  margin-top: 2rem;
+  border-top: 1px solid var(--line);
+  padding-top: 1rem;
+}
+
+.book-settings p { margin: 0.4rem 0; }
+.book-settings input { max-width: 100%; }
+
+@media (max-width: 360px) {
+  .settings-toolbar { grid-template-columns: 1fr; }
+  .settings-toolbar button { justify-self: start; }
+}

@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Chwila czytania",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "Otwórz książkę, gdy z przyzwyczajenia wchodzisz na portal.",
   "permissions": [
     "storage",

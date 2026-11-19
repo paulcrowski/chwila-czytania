@@ -1,6 +1,6 @@
 import {
   WAIT_MS, BUCKETS, EMPTY_SITES, MINUTES, groupFor, inDomain, newSession, portalUrl,
-  readerPath, redirectRules, sessionState,
+  readLimits, readerPath, redirectRules, sessionState,
 } from './model.mjs';
 
 const dnr = chrome.declarativeNetRequest;
@@ -32,9 +32,9 @@ chrome.runtime.onMessage.addListener((message, sender, respond) => {
 });
 
 async function refresh() {
-  const { sites = EMPTY_SITES, access = {} } = await local.get(['sites', 'access']);
+  const { sites = EMPTY_SITES, access = {}, limits = MINUTES } = await local.get(['sites', 'access', 'limits']);
   await syncAllowRules(sites, access);
-  return { sites, access };
+  return { sites, access, limits };
 }
 
 async function replaceRedirects(sites) {
@@ -124,11 +124,12 @@ async function returnToReading(domains) {
 
 async function handle(message, sender) {
   if (message.type === 'save-sites' && sender.url === chrome.runtime.getURL('options.html')) {
-    const { sites: previous = EMPTY_SITES, access = {} } = await local.get(['sites', 'access']);
+    const { sites: previous = EMPTY_SITES, access = {}, limits = MINUTES } = await local.get(['sites', 'access', 'limits']);
     const sites = message.sites;
+    const nextLimits = message.limits ? readLimits(message.limits) : limits;
     await replaceRedirects(sites);
     try {
-      await local.set({ sites });
+      await local.set({ sites, limits: nextLimits });
     } catch (error) {
       await replaceRedirects(previous);
       throw error;
@@ -143,32 +144,34 @@ async function handle(message, sender) {
   }
   const reader = new URL(sender.url);
   const domain = reader.searchParams.get('site');
-  const { sites, access } = await refresh();
+  const { sites, access, limits } = await refresh();
   const group = groupFor(sites, domain);
   if (group === undefined) return {};
   if (group === 'block') return { group };
 
   const now = Date.now();
   const state = sessionState(access[group], now);
-  if (state === 'used') return { group, used: true };
+  const minutes = limits[group];
+  const usedMinutes = access[group]?.minutes ?? MINUTES[group];
+  if (state === 'used') return { group, used: true, minutes: usedMinutes };
   const target = portalUrl(reader.hash.slice(1), domain);
   if (state === 'active') {
     if (message.type === 'enter') return { url: target };
-    return { group, readyAt: now, endAt: access[group].endAt };
+    return { group, readyAt: now, endAt: access[group].endAt, minutes: usedMinutes };
   }
 
   const gateKey = 'gate-' + tabId;
   if (message.type === 'show') {
     const readyAt = now + WAIT_MS;
     await session.set({ [gateKey]: { domain, readyAt } });
-    return { group, readyAt };
+    return { group, readyAt, minutes };
   }
   const gate = (await session.get(gateKey))[gateKey];
   if (message.type !== 'enter' || gate?.domain !== domain || now < gate.readyAt) {
     throw new Error('Odczekaj chwilę na czytanie i spróbuj ponownie.');
   }
 
-  access[group] = { ...newSession(group, now), startAt: now, domain };
+  access[group] = { ...newSession(group, now, minutes), startAt: now, domain, minutes };
   await local.set({ access });
   await syncAllowRules(sites, access);
   await session.remove(gateKey);
