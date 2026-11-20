@@ -17,11 +17,10 @@
     <div class="settings-heading">
       <h1 data-i18n="settings">Ustawienia</h1>
       <div class="language-control">
-        <label for="language" data-i18n="language">Język dodatku</label>
-        <select id="language">
-          <option value="pl" lang="pl">Polski</option>
-          <option value="en" lang="en">English</option>
-        </select>
+        <div class="language-toggle" role="group" aria-label="Polski / English">
+          <button type="button" data-language="pl" lang="pl" aria-label="Polski" aria-pressed="true">PL</button>
+          <button type="button" data-language="en" lang="en" aria-label="English" aria-pressed="false">ENG</button>
+        </div>
         <p id="language-status" role="status" hidden></p>
       </div>
     </div>
@@ -91,8 +90,8 @@
     <section class="book-settings" aria-labelledby="book-heading">
       <h2 id="book-heading" data-i18n="book">Książka</h2>
       <p id="current-book"></p>
-      <label for="book" data-i18n="importBook">Wczytaj książkę lub fragment z pliku TXT (UTF-8).</label>
-      <input id="book" type="file" accept=".txt,text/plain">
+      <label for="book" data-i18n="importBook">Wczytaj książkę EPUB lub plik TXT (UTF-8).</label>
+      <input id="book" type="file" accept=".epub,application/epub+zip,.txt,text/plain">
       <p id="book-status" role="status"></p>
     </section>
   </main>

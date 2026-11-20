@@ -26,16 +26,20 @@ Jeśli dwie strony są w tej samej grupie, dzielą jedną sesję dziennie. Czas 
 
 Otwartą stronę możesz też dodać z ikony dodatku. W sekcji **Dodaj tę stronę** wybierz regułę, zapisz ją i potwierdź dostęp do domeny, jeśli Chrome o to poprosi.
 
-Aby zmienić język menu, ustawień i czytnika, wybierz **Polski** albo **English** w polu **Język dodatku** u góry ustawień.
+Aby zmienić język menu, ustawień i czytnika, kliknij **PL** albo **ENG** u góry ustawień.
 
 ## Własna książka
 
-Możesz zacząć od tekstu demonstracyjnego po polsku lub angielsku albo wczytać **dowolną książkę lub własny tekst jako plik TXT w UTF-8**. Przycisk **Czytaj dalej** zapisuje miejsce. Jeśli szukasz przykładowej lektury, możesz przygotować plik TXT z [*The Machine Stops* E. M. Forstera (PDF ze Stanforda)](https://hci.stanford.edu/courses/cs047n/readings/forster.pdf).
+Możesz zacząć od tekstu demonstracyjnego po polsku lub angielsku albo wczytać **książkę EPUB bez DRM albo dowolny tekst jako plik TXT w UTF-8**. Przycisk **Czytaj dalej** zapisuje miejsce. Przy książce EPUB lista nad tekstem pozwala przejść do rozdziału. Pod przyciskiem **Wygląd czytania** znajdziesz tło **Papier**, **Noc** lub **System** oraz regulację wielkości tekstu. Jeśli szukasz przykładowej lektury, możesz przygotować plik TXT z [*The Machine Stops* E. M. Forstera (PDF ze Stanforda)](https://hci.stanford.edu/courses/cs047n/readings/forster.pdf).
 
 ## Aktualizacja
 
 Rozpakuj nowy ZIP, zastąp pliki w folderze już wskazanym w Chrome i kliknij **Załaduj ponownie** przy dodatku na stronie `chrome://extensions`.
 
 Książka, miejsce czytania, reguły i sesje są przechowywane lokalnie w profilu Chrome.
+
+## Testy
+
+Uruchom `npm ci`, a potem `npm test`. Testy obejmują blokadę, minutnik, zapis pozycji i import EPUB. Dodatek działa bez instalowania zależności. Rozpakowanie EPUB korzysta z dołączonego fflate 0.8.3 ([licencja](vendor/fflate.LICENSE)).
 
 [Licencja MIT](LICENSE) · [Zgłoś problem lub pomysł](https://github.com/paulcrowski/chwila-czytania/issues)

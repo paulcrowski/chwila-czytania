@@ -1,6 +1,6 @@
 import { appError } from './i18n.mjs';
 
-export function makeBook(title, text) {
+export function paginate(text) {
   const words = /\S+/g;
   const pages = [];
   let pageStart = 0;
@@ -12,7 +12,12 @@ export function makeBook(title, text) {
     }
     count++;
   }
-  if (!count) throw appError('emptyBook');
-  pages.push(text.slice(pageStart).trim());
+  if (count) pages.push(text.slice(pageStart).trim());
+  return pages;
+}
+
+export function makeBook(title, text) {
+  const pages = paginate(text);
+  if (!pages.length) throw appError('emptyBook');
   return { title: title.replace(/\.txt$/i, ''), pages };
 }

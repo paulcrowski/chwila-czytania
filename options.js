@@ -1,7 +1,7 @@
 import { DEFAULT_WAIT_SECONDS, EMPTY_SITES, EXAMPLE_SITES, MINUTES, domainOrigins, readLimits, readSites, readWaitSeconds } from './model.mjs';
 import { sampleFor } from './sample.mjs';
 import { appError, checkResponse, errorText, localizeDocument, translator } from './i18n.mjs';
-import { makeBook } from './book.mjs';
+import { importBook } from './book-import.mjs';
 
 const local = chrome.storage.local;
 const { sites, limits = MINUTES, book: savedBook, language = 'pl', waitSeconds = DEFAULT_WAIT_SECONDS } =
@@ -22,7 +22,7 @@ const waitInput = document.querySelector('#wait-seconds');
 const bookInput = document.querySelector('#book');
 const bookStatus = document.querySelector('#book-status');
 const currentBook = document.querySelector('#current-book');
-const languageSelect = document.querySelector('#language');
+const languageButtons = document.querySelectorAll('[data-language]');
 const languageStatus = document.querySelector('#language-status');
 
 const groups = Object.keys(EMPTY_SITES);
@@ -144,7 +144,9 @@ waitInput.addEventListener('input', onChange);
 function applyLanguage() {
   t = translator(currentLanguage);
   localizeDocument(currentLanguage, t);
-  languageSelect.value = currentLanguage;
+  for (const button of languageButtons) {
+    button.setAttribute('aria-pressed', String(button.dataset.language === currentLanguage));
+  }
   for (const group of groups) renderGroup(group);
   currentBook.textContent = t('currentBook', (current ?? sampleFor(currentLanguage)).title);
   status();
@@ -152,22 +154,25 @@ function applyLanguage() {
   updateState();
 }
 
-languageSelect.addEventListener('change', async () => {
-  const nextLanguage = languageSelect.value;
-  languageSelect.disabled = true;
-  languageStatus.hidden = true;
-  try {
-    await local.set({ language: nextLanguage });
-    currentLanguage = nextLanguage;
-    applyLanguage();
-  } catch {
-    languageSelect.value = currentLanguage;
-    languageStatus.textContent = t('languageError');
-    languageStatus.hidden = false;
-  } finally {
-    languageSelect.disabled = false;
-  }
-});
+for (const button of languageButtons) {
+  button.addEventListener('click', async () => {
+    const nextLanguage = button.dataset.language;
+    if (nextLanguage === currentLanguage) return;
+    for (const choice of languageButtons) choice.disabled = true;
+    languageStatus.hidden = true;
+    try {
+      await local.set({ language: nextLanguage });
+      currentLanguage = nextLanguage;
+      applyLanguage();
+    } catch {
+      languageStatus.textContent = t('languageError');
+      languageStatus.hidden = false;
+    } finally {
+      for (const choice of languageButtons) choice.disabled = false;
+      button.focus();
+    }
+  });
+}
 applyLanguage();
 
 document.querySelector('#sites').addEventListener('submit', async event => {
@@ -225,8 +230,8 @@ bookInput.addEventListener('change', async () => {
   if (!file) return;
   bookInput.disabled = true;
   try {
-    if (!file.name.toLowerCase().endsWith('.txt')) throw appError('txtOnly');
-    const book = makeBook(file.name, await file.text());
+    bookStatus.textContent = t('importingBook');
+    const book = await importBook(file);
     await local.set({ book, page: 0 });
     current = book;
     currentBook.textContent = t('currentBook', book.title);

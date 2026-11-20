@@ -157,17 +157,27 @@
   margin-bottom: 0.65rem;
 }
 
-.language-control label {
-  color: var(--muted);
+.language-toggle {
+  display: inline-flex;
+  gap: 0.25rem;
+  padding: 0.2rem;
+  border: 1px solid var(--line);
+  border-radius: 0.6rem;
 }
 
-.language-control select {
-  padding: 0.35rem 0.5rem;
-  border: 1px solid var(--line);
-  border-radius: 0.4rem;
-  background: var(--paper);
-  color: var(--ink);
-  font: inherit;
+.language-toggle button {
+  min-width: 3rem;
+  min-height: 2.2rem;
+  padding: 0.25rem 0.55rem;
+  background: transparent;
+  border-color: transparent;
+  color: var(--muted);
+  font-weight: 650;
+}
+
+.language-toggle button[aria-pressed="true"] {
+  background: var(--accent);
+  color: var(--button-text);
 }
 
 #language-status {

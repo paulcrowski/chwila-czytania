@@ -17,7 +17,7 @@ Sites in the same group share one session per day. The timer keeps running in th
 
 ## Install and configure
 
-To switch the extension to English, choose **English** in the **Język dodatku** (Extension language) menu at the top of Settings.
+To switch the extension to English, click **ENG** at the top of Settings.
 
 1. Download the ZIP and extract it to a folder you want to keep.
 2. Open `chrome://extensions`, enable **Developer mode**, and click **Load unpacked**. Select the `chwila-czytania` folder containing `manifest.json`.
@@ -30,12 +30,16 @@ To add the current site without leaving the tab, click the extension icon, choos
 
 ## Bring your own book
 
-Start with the included sample in English or Polish or **import any book or other text as a UTF-8 TXT file**. **Read on** saves your place. If you want a reading suggestion, try preparing a TXT file from [E. M. Forster’s *The Machine Stops* (Stanford PDF)](https://hci.stanford.edu/courses/cs047n/readings/forster.pdf).
+Start with the included sample in English or Polish or **import a DRM-free EPUB book or any UTF-8 TXT file**. **Read on** saves your place. For an EPUB book, use the chapter list above the text. Open **Reading appearance** to choose Paper, Night, or System and adjust text size. If you want a reading suggestion, try preparing a TXT file from [E. M. Forster’s *The Machine Stops* (Stanford PDF)](https://hci.stanford.edu/courses/cs047n/readings/forster.pdf).
 
 ## Update
 
 Extract the new ZIP, replace the files in the folder Chrome already uses, then click **Reload** for the extension at `chrome://extensions`.
 
 Your book, reading position, site rules, and session times are stored locally in your Chrome profile.
+
+## Tests
+
+Run `npm ci` followed by `npm test`. The tests cover site blocking, the timer, reading progress, and EPUB import. Installing the extension requires no dependencies. EPUB extraction uses the bundled fflate 0.8.3 ([license](vendor/fflate.LICENSE)).
 
 [MIT License](LICENSE) · [Report a bug or suggest an improvement](https://github.com/paulcrowski/chwila-czytania/issues)

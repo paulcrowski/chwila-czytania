@@ -1,0 +1,12 @@
+{
+  "name": "chwila-czytania",
+  "private": true,
+  "version": "0.1.10",
+  "scripts": {
+    "test": "node --test tests/*.test.mjs"
+  },
+  "devDependencies": {
+    "@xmldom/xmldom": "0.9.12"
+  },
+  "type": "module"
+}

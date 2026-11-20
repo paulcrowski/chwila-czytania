@@ -1,0 +1,150 @@
+.reader-page[data-reader-theme="paper"] {
+  color-scheme: light;
+  --paper: #f5edda;
+  --ink: #30291e;
+  --muted: #5a4c37;
+  --line: #cfc1a4;
+  --accent: #3e543a;
+  --button-text: #fffdf6;
+}
+
+.reader-page[data-reader-theme="night"] {
+  color-scheme: dark;
+  --paper: #1d201c;
+  --ink: #eee7d8;
+  --muted: #c5beae;
+  --line: #5c6257;
+  --accent: #bfd4b8;
+  --button-text: #1d201c;
+}
+
+.reader-page main {
+  width: min(100% - 2rem, 44rem);
+}
+
+.reader-page article {
+  max-inline-size: 60ch;
+  margin-inline: auto;
+  padding-bottom: 2rem;
+  min-height: 19rem;
+  font: calc(1.3rem * var(--reader-scale, 1))/1.7 Georgia, 'Times New Roman', serif;
+}
+
+.reader-page h1 {
+  margin: 1.2rem 0 0.85rem;
+  font-size: clamp(1.85rem, 1.35rem + 2vw, 2.85rem);
+  overflow-wrap: anywhere;
+}
+
+.reader-page #text {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.reader-appearance {
+  margin: 0.6rem 0;
+}
+
+.reader-appearance summary {
+  width: fit-content;
+  padding: 0.25rem 0.1rem;
+  color: var(--accent);
+  cursor: pointer;
+}
+
+.reader-appearance-controls,
+.reader-size-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.reader-appearance-controls {
+  padding: 0.5rem 0 0.7rem;
+}
+
+.reader-appearance label {
+  display: inline;
+  margin: 0;
+}
+
+.reader-appearance select,
+.chapter-picker select {
+  padding: 0.3rem 0.5rem;
+  background: var(--paper);
+  color: var(--ink);
+  border: 1px solid var(--line);
+  border-radius: 0.4rem;
+  font: inherit;
+}
+
+.reader-size-controls button {
+  min-width: 2.6rem;
+  padding: 0.25rem 0.5rem;
+  background: transparent;
+  color: var(--accent);
+}
+
+#reader-size {
+  min-width: 3.2rem;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+#reader-appearance-status {
+  margin: 0;
+  color: var(--muted);
+}
+
+.reader-page nav,
+.reader-page .portal {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.reader-page nav {
+  flex-wrap: wrap;
+  border-top: 1px solid var(--line);
+  padding: 1rem 0;
+}
+
+.reader-page .portal {
+  flex-wrap: wrap;
+  margin-top: 1rem;
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--accent);
+  border-radius: 0.45rem;
+  padding: 0.45rem 0.85rem;
+}
+
+.reader-page .portal p {
+  margin: 0.5rem 0;
+  font-weight: 600;
+}
+
+.reader-page #enter,
+.reader-page #previous {
+  color: var(--accent);
+  background: transparent;
+}
+
+.chapter-picker {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.8rem;
+}
+
+.chapter-picker label {
+  margin: 0;
+  color: var(--muted);
+}
+
+.chapter-picker select {
+  max-width: 100%;
+  text-overflow: ellipsis;
+}

@@ -1,16 +1,20 @@
+import { mountReaderAppearance } from './reader-appearance.mjs';
 import { sampleFor } from './sample.mjs';
 import { errorText, localizeDocument, translator } from './i18n.mjs';
 
 const local = chrome.storage.local;
 const samplePageKey = 'samplePage';
-const saved = await local.get(['book', 'page', samplePageKey, 'language']);
+const saved = await local.get(['book', 'page', samplePageKey, 'language', 'readerAppearance']);
 let language = saved.language ?? 'pl';
 let t = translator(language);
+const appearance = mountReaderAppearance(local, saved.readerAppearance, t);
 let customBook = saved.book;
 let page = (customBook ? saved.page : saved[samplePageKey]) ?? 0;
 const title = document.querySelector('#title');
 const text = document.querySelector('#text');
 const label = document.querySelector('#page');
+const chapterPicker = document.querySelector('#chapter-picker');
+const chapterSelect = document.querySelector('#chapter');
 const previous = document.querySelector('#previous');
 const next = document.querySelector('#next');
 const portal = document.querySelector('#portal');
@@ -23,21 +27,36 @@ let checkFailed = false;
 let opening = false;
 let openFailed = false;
 
+function renderChapters() {
+  const chapters = customBook?.chapters ?? [];
+  chapterPicker.hidden = chapters.length < 2;
+  const options = chapters.map((chapter, index) => {
+    const option = document.createElement('option');
+    option.value = chapter.startPage;
+    option.textContent = chapter.title || t('chapterNumber', index + 1);
+    return option;
+  });
+  chapterSelect.replaceChildren(...options);
+}
+
 function renderPage() {
   const book = customBook ?? sampleFor(language);
   page = Math.max(0, Math.min(page, book.pages.length - 1));
   title.textContent = book.title;
   text.textContent = book.pages[page];
   title.lang = text.lang = book.language ?? '';
+  const chapter = book.chapters?.findLast(entry => entry.startPage <= page);
+  if (chapter) chapterSelect.value = chapter.startPage;
   label.textContent = (page + 1) + ' / ' + book.pages.length;
   previous.disabled = page === 0;
   next.disabled = page === book.pages.length - 1;
 }
 
-function move(offset) {
-  page += offset;
+function goToPage(index) {
+  page = index;
   renderPage();
   local.set({ [customBook ? 'page' : samplePageKey]: page });
+  title.scrollIntoView({ block: 'start' });
 }
 
 function renderAccess() {
@@ -74,24 +93,31 @@ function renderAccess() {
   }
 }
 
-previous.addEventListener('click', () => move(-1));
-next.addEventListener('click', () => move(1));
+previous.addEventListener('click', () => goToPage(page - 1));
+next.addEventListener('click', () => goToPage(page + 1));
+chapterSelect.addEventListener('change', () => goToPage(Number(chapterSelect.value)));
 chrome.storage.onChanged.addListener((changes, area) => {
   if (area !== 'local') return;
   if (changes.language) {
     language = changes.language.newValue ?? 'pl';
     t = translator(language);
     localizeDocument(language, t);
+    appearance.setLanguage(t);
     renderAccess();
   }
+  if (changes.readerAppearance) appearance.apply(changes.readerAppearance.newValue);
   if (changes.book) {
     customBook = changes.book.newValue;
     page = changes.page?.newValue ?? 0;
   }
-  if (changes.book || changes.language) renderPage();
+  if (changes.book || changes.language) {
+    renderChapters();
+    renderPage();
+  }
 });
 
 localizeDocument(language, t);
+renderChapters();
 renderPage();
 if (domain) {
   renderAccess();

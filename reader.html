@@ -5,18 +5,40 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Chwila czytania</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="reader.css">
   <script type="module" src="reader.js"></script>
 </head>
-<body>
+<body class="reader-page">
   <main>
     <header>
       <span>Chwila czytania</span>
       <a href="options.html" target="_blank" rel="noopener" data-i18n="settings">Ustawienia</a>
     </header>
+    <details class="reader-appearance">
+      <summary data-i18n="readingAppearance">Wygląd czytania</summary>
+      <div class="reader-appearance-controls">
+        <label for="reader-theme" data-i18n="readerTheme">Tło</label>
+        <select id="reader-theme">
+          <option value="system">System</option>
+          <option value="paper">Papier</option>
+          <option value="night">Noc</option>
+        </select>
+        <div class="reader-size-controls" role="group" aria-label="Wielkość tekstu" data-i18n-aria-label="readerSize">
+          <button id="reader-smaller" type="button" aria-label="Zmniejsz tekst" data-i18n-aria-label="smallerText">A−</button>
+          <output id="reader-size">100%</output>
+          <button id="reader-larger" type="button" aria-label="Powiększ tekst" data-i18n-aria-label="largerText">A+</button>
+        </div>
+      </div>
+      <p id="reader-appearance-status" role="status" hidden></p>
+    </details>
     <section id="portal" class="portal" hidden aria-label="Dostęp do strony" data-i18n-aria-label="siteAccess">
       <p id="access" aria-live="polite"></p>
       <button id="enter" type="button" hidden data-i18n="openSite">Otwórz portal</button>
     </section>
+    <div id="chapter-picker" class="chapter-picker" hidden>
+      <label for="chapter" data-i18n="chapters">Rozdziały</label>
+      <select id="chapter"></select>
+    </div>
     <article aria-labelledby="title">
       <h1 id="title"></h1>
       <div id="text"></div>
