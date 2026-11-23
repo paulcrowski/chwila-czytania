@@ -4,9 +4,13 @@ function element(selector) {
   if (!elements.has(selector)) {
     elements.set(selector, {
       replaceChildren(...children) { this.children = children; },
+      children: [],
+      append(fragment) { this.children.push(...fragment.children); },
+      dataset: {},
+      getBoundingClientRect() { return { top: 40, bottom: 100, height: 60 }; },
       options: selector === '#reader-theme' ? ['system', 'paper', 'night'].map(value => ({ value })) : [],
       style: { setProperty() {} },
-      scrollIntoView() { this.scrolled = true; },
+      scrollIntoView(options) { this.scrolled = options; },
       hidden: true,
       listeners: {},
       addEventListener(name, callback) { this.listeners[name] = callback; },
@@ -14,7 +18,16 @@ function element(selector) {
   }
   return elements.get(selector);
 }
-globalThis.document = { body: { dataset: {}, style: { setProperty() {} } }, documentElement: {}, querySelectorAll: () => [], querySelector: element, createElement: () => ({}) };
+globalThis.document = { body: { dataset: {}, style: { setProperty() {} } }, documentElement: {}, querySelectorAll: () => [], querySelector: element, createElement: () => ({ dataset: {}, getBoundingClientRect: () => ({ top: 40, bottom: 100, height: 60 }), scrollIntoView(options) { this.scrolled = options; } }), createDocumentFragment: () => ({ children: [], append(el) { this.children.push(el); } }) };
+const windowEvents = {};
+Object.assign(globalThis, {
+  window: { addEventListener(name, listener) { windowEvents[name] = listener; } },
+  IntersectionObserver: class { observe() {} unobserve() {} },
+  requestAnimationFrame: () => 1,
+});
+document.addEventListener = () => {};
+let reduced = false;
+globalThis.matchMedia = () => ({ get matches() { return reduced; } });
 let visited;
 globalThis.location = {
   search: '?site=example.org',
@@ -48,7 +61,11 @@ assert.equal(visited, undefined);
 await element('#enter').listeners.click();
 assert.equal(visited, 'https://example.org/');
 element('#next').listeners.click();
-assert.equal(element('#title').scrolled, true);
+assert.deepEqual(element('#text').children[0].scrolled, { block: 'start', behavior: 'smooth' });
+reduced = true;
+element('#previous').listeners.click();
+assert.equal(element('#text').children[0].scrolled.behavior, 'instant');
+element('#next').listeners.click();
 assert.equal(chrome.storage.local.saved.samplePage, 1);
 elements.clear();
 duration = 120;
@@ -57,6 +74,7 @@ assert.equal(element('#enter').disabled, true);
 assert.equal(element('#enter').textContent, 'Otwórz za 120 s');
 now += 60_000;
 changeLanguage('en');
+await new Promise(resolve => setImmediate(resolve));
 assert.equal(element('#enter').textContent, 'Open in 60 s');
 assert.equal(document.documentElement.lang, 'en');
 assert.equal(messages.filter(message => message === 'show').length, 2);
@@ -76,11 +94,12 @@ const book = {
 };
 await chrome.storage.local.set({ book, page: 0 });
 notifyStorage({ book: { newValue: book }, page: { newValue: 0 } }, 'local');
+await new Promise(resolve => setImmediate(resolve));
 assert.equal(element('#chapter-picker').hidden, false);
 assert.equal(element('#chapter').children.length, 2);
 element('#chapter').value = '2';
 element('#chapter').listeners.change();
-assert.equal(element('#text').textContent, 'Następny rozdział');
+assert.equal(element('#text').children[0].textContent, 'Następny rozdział');
 assert.equal(chrome.storage.local.saved.page, 2);
 
 elements.clear();
@@ -88,5 +107,5 @@ globalThis.location.search = '';
 await import('../reader.js?resume');
 assert.equal(element('#page').textContent, '3 / 3');
 assert.equal(element('#chapter').value, 2);
-assert.equal(element('#text').textContent, 'Następny rozdział');
+assert.equal(element('#text').children[0].textContent, 'Następny rozdział');
 console.log('PASS — chapter jump and restored progress');

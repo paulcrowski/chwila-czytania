@@ -1,3 +1,7 @@
+import { mountBookContent } from './reader-content.mjs';
+import { mountReaderQuotes } from './reader-quotes.mjs';
+import { trackReading } from './reader-activity.mjs';
+import { mountReaderScroll } from './reader-scroll.mjs';
 import { mountReaderAppearance } from './reader-appearance.mjs';
 import { sampleFor } from './sample.mjs';
 import { errorText, localizeDocument, translator } from './i18n.mjs';
@@ -9,7 +13,9 @@ let language = saved.language ?? 'pl';
 let t = translator(language);
 const appearance = mountReaderAppearance(local, saved.readerAppearance, t);
 let customBook = saved.book;
-let page = (customBook ? saved.page : saved[samplePageKey]) ?? 0;
+let legacyPage = (customBook ? saved.page : saved[samplePageKey]) ?? 0;
+const openQuotes = location.hash === '#quotes';
+const { scrollTo, setProgress } = mountReaderScroll();
 const title = document.querySelector('#title');
 const text = document.querySelector('#text');
 const label = document.querySelector('#page');
@@ -27,7 +33,21 @@ let checkFailed = false;
 let opening = false;
 let openFailed = false;
 
+const quotes = await mountReaderQuotes({
+  local, text, jump: (page, paragraph) => content.jump(page, paragraph),
+  translate: (...args) => t(...args),
+});
+const content = mountBookContent({
+  local, text, title, label, previous, next, chapterSelect,
+  sentinel: document.querySelector('#next-fragment'),
+  scrollTo, setProgress,
+  onChange(book, bookId) {
+    quotes.setBook(book, bookId);
+  },
+});
+
 function renderChapters() {
+  const oldValue = chapterSelect.value;
   const chapters = customBook?.chapters ?? [];
   chapterPicker.hidden = chapters.length < 2;
   const options = chapters.map((chapter, index) => {
@@ -37,26 +57,12 @@ function renderChapters() {
     return option;
   });
   chapterSelect.replaceChildren(...options);
+  if (options.some(option => option.value === oldValue)) chapterSelect.value = oldValue;
 }
 
-function renderPage() {
-  const book = customBook ?? sampleFor(language);
-  page = Math.max(0, Math.min(page, book.pages.length - 1));
-  title.textContent = book.title;
-  text.textContent = book.pages[page];
-  title.lang = text.lang = book.language ?? '';
-  const chapter = book.chapters?.findLast(entry => entry.startPage <= page);
-  if (chapter) chapterSelect.value = chapter.startPage;
-  label.textContent = (page + 1) + ' / ' + book.pages.length;
-  previous.disabled = page === 0;
-  next.disabled = page === book.pages.length - 1;
-}
-
-function goToPage(index) {
-  page = index;
-  renderPage();
-  local.set({ [customBook ? 'page' : samplePageKey]: page });
-  title.scrollIntoView({ block: 'start' });
+function loadBook(showQuotes = false) {
+  renderChapters();
+  return content.load(customBook ?? sampleFor(language), customBook ? 'page' : samplePageKey, legacyPage, showQuotes);
 }
 
 function renderAccess() {
@@ -93,9 +99,6 @@ function renderAccess() {
   }
 }
 
-previous.addEventListener('click', () => goToPage(page - 1));
-next.addEventListener('click', () => goToPage(page + 1));
-chapterSelect.addEventListener('change', () => goToPage(Number(chapterSelect.value)));
 chrome.storage.onChanged.addListener((changes, area) => {
   if (area !== 'local') return;
   if (changes.language) {
@@ -104,25 +107,35 @@ chrome.storage.onChanged.addListener((changes, area) => {
     localizeDocument(language, t);
     appearance.setLanguage(t);
     renderAccess();
+    quotes.render();
   }
   if (changes.readerAppearance) appearance.apply(changes.readerAppearance.newValue);
   if (changes.book) {
     customBook = changes.book.newValue;
-    page = changes.page?.newValue ?? 0;
-  }
-  if (changes.book || changes.language) {
-    renderChapters();
-    renderPage();
+    legacyPage = changes.page?.newValue ?? 0;
+    loadBook().catch(console.error);
+  } else if (changes.language) {
+    if (customBook) renderChapters();
+    else loadBook().catch(console.error);
   }
 });
 
 localizeDocument(language, t);
-renderChapters();
-renderPage();
+await loadBook(openQuotes);
+if (openQuotes) quotes.open(scrollTo);
 if (domain) {
   renderAccess();
   try {
-    accessResult = await chrome.runtime.sendMessage({ type: 'show' });
+    const navigation = performance.getEntriesByType('navigation')[0];
+    accessResult = await chrome.runtime.sendMessage({
+      type: 'show',
+      countOpening: navigation?.type === 'navigate',
+    });
+    if (accessResult?.group) {
+      trackReading(duration => {
+        chrome.runtime.sendMessage({ type: 'reading-time', duration }).catch(() => {});
+      });
+    }
   } catch {
     checkFailed = true;
   }

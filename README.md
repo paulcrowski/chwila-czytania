@@ -1,45 +1,51 @@
 # Chwila czytania
 
-**[Pobierz dodatek do Chrome (ZIP)](https://github.com/paulcrowski/chwila-czytania/releases/latest/download/chwila-czytania.zip)** · [English](README.en.md)
+**[Pobierz dodatek do Chrome (ZIP)](https://github.com/paulcrowski/chwila-czytania/releases/latest/download/chwila-czytania.zip)** · [English](README.en.md) · [Historia wydań](https://github.com/paulcrowski/chwila-czytania/releases)
 
-Chwila czytania otwiera książkę, gdy wchodzisz na stronę, którą chcesz odwiedzać rzadziej. Czytnik wraca do ostatniego fragmentu. Możesz zablokować stronę całkowicie albo dać sobie kilka minut dziennie.
+Gdy odruchowo otwierasz portal, Chwila czytania otwiera Twoją książkę na ostatnim zapisanym akapicie. Sam wybierasz, które strony blokować i którym dać kilka minut dziennie.
 
-## Jak to działa
+## Instalacja
 
-Dodaj Interię do stałej blokady, a Onet i Pudelka do grupy z limitem **5 minut**.
+1. Pobierz i rozpakuj ZIP. Zachowaj rozpakowany folder `chwila-czytania`.
+2. W Chrome otwórz `chrome://extensions` i włącz **Tryb dewelopera**.
+3. Kliknij **Załaduj rozpakowane** i wybierz folder zawierający `manifest.json`.
+4. Otwórz **Ustawienia** z menu dodatku. Dodaj domeny, wybierz reguły i kliknij **Zapisz zmiany**. Chrome poprosi o dostęp do wskazanych domen.
 
-| Reguła | Co zobaczysz przy pierwszym wejściu |
+Reguły obejmują także subdomeny. Możesz dodać kilka domen po przecinku lub zapisać regułę dla bieżącej strony przez **Dodaj tę stronę** pod ikoną dodatku. Przyciskami **PL** i **ENG** w ustawieniach zmienisz język.
+
+## Zasady blokowania
+
+| Reguła | Co się dzieje po otwarciu strony |
 | --- | --- |
-| **Zawsze blokuj** | Wejście na Interię od razu otworzy czytnik. |
-| **Limit dzienny** | Onet otworzy czytnik. Po wybranym czasie oczekiwania możesz kliknąć **Otwórz portal** i uruchomić wspólny minutnik dla Onetu i Pudelka. |
+| **Zawsze blokuj** | Czytnik otwiera się od razu. |
+| **Limit dzienny** | Najpierw otwiera się czytnik. Po ustawionym czasie możesz kliknąć **Otwórz portal**, żeby uruchomić minutnik. |
 
-Jeśli dwie strony są w tej samej grupie, dzielą jedną sesję dziennie. Czas biegnie również w tle. Minuty pozostałe do końca najbliższej sesji widać na ikonie dodatku. Kliknij ikonę, żeby zobaczyć dokładny czas każdej aktywnej sesji. Po wyczerpaniu limitu otwarte strony z tej grupy wracają do czytnika.
+Możesz ustawić dwie grupy z własnymi limitami. Domeny w jednej grupie dzielą jedną sesję dziennie. Domyślne limity to 10 i 15 minut, a domyślny czas oczekiwania to 30 sekund. Przy 0 sekundach przycisk **Otwórz portal** jest dostępny od razu.
 
-## Instalacja i ustawienia
+Czas sesji na portalu biegnie także w tle. Pod ikoną dodatku widać pozostały czas, a po upływie limitu otwarte strony z tej grupy wracają do czytnika.
 
-1. Pobierz i rozpakuj ZIP w folderze, który chcesz zachować.
-2. Otwórz `chrome://extensions`, włącz **Tryb dewelopera** i kliknij **Załaduj rozpakowane**. Wskaż folder `chwila-czytania` z plikiem `manifest.json`.
-3. Otwórz **Ustawienia** z menu dodatku. Dodaj domeny pojedynczo albo po przecinku. Każda reguła obejmuje również subdomeny.
-4. Wybierz stałą blokadę albo jedną z dwóch grup czasowych. Domyślne limity to 10 i 15 minut. Możesz je zmienić, a nowy limit zacznie obowiązywać od następnej sesji.
-5. Ustaw **Czas przed wejściem na portal**. Domyślnie to 30 sekund. Wpisz np. 60, 120 lub 0, jeśli przycisk **Otwórz portal** ma pojawiać się od razu.
-6. Kliknij **Zapisz zmiany** i przyznaj dodatkowi dostęp do podanych domen.
+## Własna książka i cytaty
 
-Otwartą stronę możesz też dodać z ikony dodatku. W sekcji **Dodaj tę stronę** wybierz regułę, zapisz ją i potwierdź dostęp do domeny, jeśli Chrome o to poprosi.
+Wczytaj **EPUB bez DRM** lub **TXT w UTF-8** albo zacznij od przykładowego tekstu. Kolejne fragmenty doczytują się przy przewijaniu. Czytnik zapamiętuje ostatni akapit osobno dla każdej książki. W EPUB możesz przejść do rozdziału z listy. W menu **Wygląd czytania** ustawisz rozmiar tekstu i wybierzesz tło Papier, Noc lub System.
 
-Aby zmienić język menu, ustawień i czytnika, kliknij **PL** albo **ENG** u góry ustawień.
+Zaznacz fragment i kliknij **Zapisz cytat**. Cytaty z tytułami książek znajdziesz pod **Zapisane cytaty** w czytniku i menu dodatku. Zostają po zmianie książki. Po ponownym wczytaniu tego samego pliku przy cytacie zobaczysz **Przejdź do fragmentu**.
 
-## Własna książka
+Jeśli szukasz przykładowej lektury, możesz przygotować TXT z [*The Machine Stops* E.M. Forstera (PDF ze Stanforda)](https://hci.stanford.edu/courses/cs047n/readings/forster.pdf).
 
-Możesz zacząć od tekstu demonstracyjnego po polsku lub angielsku albo wczytać **książkę EPUB bez DRM albo dowolny tekst jako plik TXT w UTF-8**. Przycisk **Czytaj dalej** zapisuje miejsce. Przy książce EPUB lista nad tekstem pozwala przejść do rozdziału. Pod przyciskiem **Wygląd czytania** znajdziesz tło **Papier**, **Noc** lub **System** oraz regulację wielkości tekstu. Jeśli szukasz przykładowej lektury, możesz przygotować plik TXT z [*The Machine Stops* E. M. Forstera (PDF ze Stanforda)](https://hci.stanford.edu/courses/cs047n/readings/forster.pdf).
+## Statystyki po blokadzie
+
+Kliknij ikonę dodatku, żeby zobaczyć wyniki **Dziś**, **7 dni** i **Łącznie**.
+
+- **Otwarcia blokady** liczą przekierowania do czytnika. Odświeżenie czytnika nie zwiększa licznika.
+- **Czas w czytniku** obejmuje czas po przekierowaniu, gdy karta czytnika jest widoczna i aktywna.
+- **Wejścia na portal** liczą przejścia z czytnika po użyciu przycisku **Otwórz portal**.
+
+Książka, pozycje, cytaty, reguły i statystyki są przechowywane lokalnie w profilu Chrome.
 
 ## Aktualizacja
 
-Rozpakuj nowy ZIP, zastąp pliki w folderze już wskazanym w Chrome i kliknij **Załaduj ponownie** przy dodatku na stronie `chrome://extensions`.
+Rozpakuj nowy ZIP i zastąp pliki w folderze używanym przez Chrome. Potem kliknij **Załaduj ponownie** przy dodatku na `chrome://extensions`.
 
-Książka, miejsce czytania, reguły i sesje są przechowywane lokalnie w profilu Chrome.
+## Testy i licencja
 
-## Testy
-
-Uruchom `npm ci`, a potem `npm test`. Testy obejmują blokadę, minutnik, zapis pozycji i import EPUB. Dodatek działa bez instalowania zależności. Rozpakowanie EPUB korzysta z dołączonego fflate 0.8.3 ([licencja](vendor/fflate.LICENSE)).
-
-[Licencja MIT](LICENSE) · [Zgłoś problem lub pomysł](https://github.com/paulcrowski/chwila-czytania/issues)
+Uruchom `npm ci` i `npm test`. Testy obejmują blokowanie, minutnik, import EPUB, zapamiętywanie pozycji, zapis cytatów i liczenie statystyk. Dodatek zawiera bibliotekę fflate do odczytu EPUB. [Licencja MIT](LICENSE) · [Licencja fflate](vendor/fflate.LICENSE)
