@@ -18,6 +18,24 @@
   --button-text: #1d201c;
 }
 
+#scroll-progress {
+  position: fixed;
+  z-index: 1;
+  inset: 0 0 auto;
+  height: 3px;
+  background: var(--line);
+  pointer-events: none;
+}
+
+#scroll-progress::after {
+  content: '';
+  display: block;
+  height: 100%;
+  background: var(--accent);
+  transform: scaleX(var(--scroll-progress, 0));
+  transform-origin: left;
+}
+
 .reader-page main {
   width: min(100% - 2rem, 44rem);
 }
@@ -32,6 +50,7 @@
 
 .reader-page h1 {
   margin: 1.2rem 0 0.85rem;
+  scroll-margin-block-start: 1rem;
   font-size: clamp(1.85rem, 1.35rem + 2vw, 2.85rem);
   overflow-wrap: anywhere;
 }
@@ -147,4 +166,77 @@
 .chapter-picker select {
   max-width: 100%;
   text-overflow: ellipsis;
+}
+
+.reader-page #text p {
+  margin: 0 0 1em;
+  scroll-margin-block-start: 2.5rem;
+}
+
+.reader-page #next-fragment {
+  height: 1px;
+}
+
+.reader-quotes {
+  margin-block: 0.75rem;
+  scroll-margin-block-start: 1rem;
+}
+
+.reader-quotes summary {
+  width: fit-content;
+  color: var(--accent);
+  cursor: pointer;
+}
+
+#quote-list {
+  list-style: none;
+  padding: 0;
+}
+
+#quote-list li {
+  margin-block: 1rem;
+  border-inline-start: 2px solid var(--line);
+  padding-inline-start: 0.85rem;
+}
+
+#quote-list blockquote {
+  margin: 0;
+  font: 1.1rem/1.6 Georgia, serif;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+#quote-list p,
+#quote-empty {
+  color: var(--muted);
+}
+
+#quote-list p {
+  margin-block: 0.2rem 0.6rem;
+}
+
+#quote-list button {
+  margin: 0 0.45rem 0.3rem 0;
+  padding: 0.25rem 0.5rem;
+  color: var(--accent);
+  background: transparent;
+}
+
+#quote-actions {
+  position: fixed;
+  z-index: 2;
+  inset: auto 1rem 1rem;
+  margin-inline: auto;
+  width: fit-content;
+  max-width: calc(100% - 2rem);
+  padding: 0.35rem;
+  border: 1px solid var(--line);
+  border-radius: 0.65rem;
+  background: var(--paper);
+  box-shadow: 0 0.2rem 1rem #0002;
+}
+
+#quote-status:not(:empty) {
+  display: inline-block;
+  padding-inline: 0.55rem;
 }

@@ -9,6 +9,7 @@
   <script type="module" src="reader.js"></script>
 </head>
 <body class="reader-page">
+  <div id="scroll-progress" aria-hidden="true" hidden></div>
   <main>
     <header>
       <span>Chwila czytania</span>
@@ -39,15 +40,25 @@
       <label for="chapter" data-i18n="chapters">Rozdziały</label>
       <select id="chapter"></select>
     </div>
+    <details id="quotes" class="reader-quotes">
+      <summary data-i18n="savedQuotes">Zapisane cytaty</summary>
+      <p id="quote-empty" data-i18n="quoteEmpty">Zaznacz tekst książki i wybierz „Zapisz cytat”.</p>
+      <ul id="quote-list"></ul>
+    </details>
+    <nav aria-label="Nawigacja książki" data-i18n-aria-label="bookNav">
+      <button id="previous" type="button" data-i18n="previousPage" disabled>Wstecz</button>
+      <span id="page"></span>
+      <button id="next" type="button" data-i18n="nextFragment" disabled>Następny fragment</button>
+    </nav>
     <article aria-labelledby="title">
       <h1 id="title"></h1>
       <div id="text"></div>
+      <div id="next-fragment" aria-hidden="true"></div>
     </article>
-    <nav aria-label="Nawigacja książki" data-i18n-aria-label="bookNav">
-      <button id="previous" type="button" data-i18n="previousPage">Wstecz</button>
-      <span id="page"></span>
-      <button id="next" type="button" data-i18n="nextPage">Czytaj dalej</button>
-    </nav>
+    <div id="quote-actions" hidden>
+      <button id="save-quote" type="button" data-i18n="saveQuote" hidden>Zapisz cytat</button>
+      <span id="quote-status" role="status"></span>
+    </div>
   </main>
 </body>
 </html>

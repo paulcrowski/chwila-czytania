@@ -3,6 +3,7 @@ import {
   readLimits, readSites, readWaitSeconds, readerPath, redirectRules, sessionState,
 } from './model.mjs';
 import { appError, translator } from './i18n.mjs';
+import { addReadingProgress, MAX_READING_SLICE_MS } from './reading-progress.mjs';
 
 const dnr = chrome.declarativeNetRequest;
 const local = chrome.storage.local;
@@ -36,7 +37,9 @@ chrome.tabs.onActivated.addListener(({ tabId }) => queue(() => checkTab(tabId)).
 chrome.storage.onChanged.addListener((changes, area) => {
   if (area === 'local' && changes.language) queue(refresh).catch(console.error);
 });
-chrome.tabs.onRemoved.addListener(tabId => session.remove('gate-' + tabId));
+chrome.tabs.onRemoved.addListener(tabId => {
+  queue(() => session.remove(['gate-' + tabId, 'reading-document-' + tabId])).catch(console.error);
+});
 chrome.runtime.onMessage.addListener((message, sender, respond) => {
   if (sender.id !== chrome.runtime.id) return false;
   queue(() => handle(message, sender)).then(respond, error => {
@@ -176,6 +179,43 @@ async function saveSiteConfiguration(config, sites, limits, waitSeconds = config
   await returnToReading(blockedDomains(sites, access));
 }
 
+async function storeReadingProgress(progress, openings, readingMs, portalOpens = 0) {
+  await local.set({ readingProgress: addReadingProgress(progress, openings, readingMs, Date.now(), portalOpens) });
+}
+
+async function countReadingOpening(message, sender, tabId) {
+  if (message.countOpening !== true || !sender.documentId) return;
+  const key = 'reading-document-' + tabId;
+  if ((await session.get(key))[key] === sender.documentId) return;
+  const { readingProgress } = await local.get('readingProgress');
+  await storeReadingProgress(readingProgress, 1, 0);
+  await session.set({ [key]: sender.documentId });
+}
+
+async function recordPortalOpening() {
+  const { readingProgress } = await local.get('readingProgress');
+  await storeReadingProgress(readingProgress, 0, 0, 1);
+}
+
+async function updateQuotes(message) {
+  const { quotes = [] } = await local.get('quotes');
+  if (message.type === 'remove-quote') {
+    await local.set({ quotes: quotes.filter(quote => quote.id !== message.id) });
+    return {};
+  }
+  const { text, title, bookId, page, paragraph } = message.quote ?? {};
+  if (typeof text !== 'string' || !text.trim() || text.length > 4_000 ||
+      typeof title !== 'string' || !/^[a-f0-9]{64}$/.test(bookId) ||
+      !Number.isSafeInteger(page) || page < 0 || !Number.isSafeInteger(paragraph) || paragraph < 0) {
+    throw appError('quoteError');
+  }
+  if (!quotes.some(quote => quote.bookId === bookId && quote.page === page &&
+      quote.paragraph === paragraph && quote.text === text)) {
+    await local.set({ quotes: [{ id: crypto.randomUUID(), text, title, bookId, page, paragraph }, ...quotes] });
+  }
+  return {};
+}
+
 async function handle(message, sender) {
   if (message.type === 'save-sites' && sender.url === chrome.runtime.getURL('options.html')) {
     const config = await local.get(['sites', 'access', 'limits', 'waitSeconds']);
@@ -216,14 +256,29 @@ async function handle(message, sender) {
   }
 
   const tabId = sender.tab?.id;
+  if (message.type === 'save-quote' || message.type === 'remove-quote') {
+    const page = sender.url?.split(/[?#]/, 1)[0];
+    if (tabId === undefined || page !== chrome.runtime.getURL('reader.html')) throw appError('readerTab');
+    return updateQuotes(message);
+  }
   if (tabId === undefined || !sender.url?.startsWith(chrome.runtime.getURL('reader.html?'))) {
     throw appError('readerTab');
   }
   const reader = new URL(sender.url);
   const domain = reader.searchParams.get('site');
+  if (message.type === 'reading-time') {
+    const { duration } = message;
+    if (!Number.isInteger(duration) || duration <= 0 || duration > MAX_READING_SLICE_MS) return {};
+    const { sites = EMPTY_SITES, readingProgress } = await local.get(['sites', 'readingProgress']);
+    if (groupFor(sites, domain)) await storeReadingProgress(readingProgress, 0, duration);
+    return {};
+  }
   const { sites, access, limits, waitSeconds } = await refresh();
   const group = groupFor(sites, domain);
   if (group === undefined) return {};
+  if (message.type === 'show') {
+    await countReadingOpening(message, sender, tabId).catch(console.error);
+  }
   if (group === 'block') return { group };
 
   const now = Date.now();
@@ -233,7 +288,10 @@ async function handle(message, sender) {
   if (state === 'used') return { group, used: true, minutes: usedMinutes };
   const target = portalUrl(reader.hash.slice(1), domain);
   if (state === 'active') {
-    if (message.type === 'enter') return { url: target };
+    if (message.type === 'enter') {
+      await recordPortalOpening().catch(console.error);
+      return { url: target };
+    }
     return { group, readyAt: now, endAt: access[group].endAt, minutes: usedMinutes };
   }
 
@@ -252,5 +310,6 @@ async function handle(message, sender) {
   await local.set({ access });
   await syncAllowRules(sites, access);
   await session.remove(gateKey);
+  await recordPortalOpening().catch(console.error);
   return { url: target };
 }

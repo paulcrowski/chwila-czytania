@@ -31,7 +31,7 @@ function storage() {
       return Object.fromEntries([keys].flat().map(key => [key, structuredClone(data[key])]));
     },
     async set(values) { Object.assign(data, structuredClone(values)); },
-    async remove(key) { delete data[key]; },
+    async remove(keys) { for (const key of [keys].flat()) delete data[key]; },
   };
 }
 let dynamic = [];
@@ -85,9 +85,9 @@ globalThis.chrome = {
 let now = +new Date(2026, 10, 19, 9, 0);
 Date.now = () => now;
 await import('../background.js');
-function send(message, path, id = 1) {
+function send(message, path, id = 1, documentId) {
   return new Promise(resolve => {
-    assert.equal(chrome.runtime.onMessage.fn(message, { id: 'test', url: getURL(path), tab: { id } }, resolve), true);
+    assert.equal(chrome.runtime.onMessage.fn(message, { id: 'test', url: getURL(path), tab: { id }, documentId }, resolve), true);
   });
 }
 
@@ -206,3 +206,56 @@ assert.equal(rejected.errorInfo.key, 'domainOverlap');
 const { translator, errorText } = await import('../i18n.mjs');
 assert.match(errorText(translator('en'), rejected), /overlaps.*sub\.wykop\.pl/);
 console.log('PASS — worker errors carry translatable metadata');
+
+const showOpening = { type: 'show', countOpening: true };
+await send(showOpening, blockedSite(), 30, 'first');
+await send(showOpening, blockedSite(), 30, 'first');
+await send({ type: 'show', countOpening: false }, blockedSite(), 30, 'reload');
+await send(showOpening, blockedSite(), 30, 'second');
+await send(showOpening, 'reader.html?site=missing.test', 30, 'unconfigured');
+
+const reading = duration => ({ type: 'reading-time', duration });
+await Promise.all([
+  send(reading(5000), blockedSite(), 30, 'second'),
+  send(reading(2500), blockedSite(), 31, 'another'),
+]);
+await send(reading(30000), blockedSite(), 30, 'second');
+await send(reading(5000), 'reader.html?site=missing.test', 30, 'unconfigured');
+await send(reading(5000), 'reader.html', 32, 'manual');
+
+const { addReadingProgress, readingSummary } = await import('../reading-progress.mjs');
+const getProgress = async () => readingSummary((await chrome.storage.local.get('readingProgress')).readingProgress, now);
+const progress = await getProgress();
+assert.deepEqual(progress.today, { openings: 2, readingMs: 7500, portalOpens: 2 });
+assert.deepEqual(progress.total, progress.today);
+now = +new Date(2026, 10, 20, 0, 0, 2);
+await send(reading(5000), blockedSite(), 30, 'second');
+const nextDay = await getProgress();
+assert.deepEqual(nextDay.today, { openings: 0, readingMs: 2000, portalOpens: 0 });
+assert.deepEqual(nextDay.total, { openings: 2, readingMs: 12500, portalOpens: 2 });
+
+assert.deepEqual(nextDay.week, nextDay.total);
+const legacyDay = '2026-11-20';
+const migrated = addReadingProgress({
+  day: legacyDay, today: { openings: 3, readingMs: 5000 }, total: { openings: 10, readingMs: 40000 },
+}, 2, 0, +new Date(2026, 10, 22));
+assert.equal(readingSummary(migrated, +new Date(2026, 10, 26)).week.openings, 5);
+assert.equal(readingSummary(migrated, +new Date(2026, 10, 27)).week.openings, 2);
+assert.equal(readingSummary(migrated, +new Date(2026, 10, 28)).total.openings, 12);
+
+const { bookIdentity } = await import('../book-position.mjs');
+const originalBook = { title: 'Original', pages: ['Text to quote.', 'Second page.'] };
+const originalId = await bookIdentity(originalBook);
+assert.equal(originalId, await bookIdentity({ ...originalBook, title: 'Renamed' }));
+assert.notEqual(originalId, await bookIdentity({ ...originalBook, pages: ['Other text.'] }));
+const quote = { text: 'Text to quote.', title: originalBook.title, bookId: originalId, page: 0, paragraph: 0 };
+await Promise.all([
+  send({ type: 'save-quote', quote }, 'reader.html'),
+  send({ type: 'save-quote', quote }, blockedSite()),
+]);
+await chrome.storage.local.set({ book: { title: 'Another book', pages: ['Another page.'] }, page: 0 });
+const { quotes: [savedQuote, duplicate] } = await chrome.storage.local.get('quotes');
+assert.equal(duplicate, undefined);
+assert.deepEqual({ ...savedQuote, id: undefined }, { ...quote, id: undefined });
+assert.deepEqual(await send({ type: 'remove-quote', id: savedQuote.id }, 'reader.html#quotes'), {});
+assert.deepEqual((await chrome.storage.local.get('quotes')).quotes, []);

@@ -23,8 +23,40 @@
     </form>
     <p id="idle" data-i18n="timerIdle">Minutnik jest wyłączony.</p>
     <ul id="sessions" class="sessions" hidden></ul>
+    <table class="reading-stats">
+      <caption data-i18n="readingStats">Czytanie po blokadzie</caption>
+      <thead>
+        <tr>
+          <td></td>
+          <th scope="col" data-i18n="statsToday">Dziś</th>
+          <th scope="col" data-i18n="statsWeek">7 dni</th>
+          <th scope="col" data-i18n="statsTotal">Łącznie</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <th scope="row" data-i18n="statsOpenings">Otwarcia blokady</th>
+          <td id="today-openings"></td>
+          <td id="week-openings"></td>
+          <td id="total-openings"></td>
+        </tr>
+        <tr>
+          <th scope="row" data-i18n="statsTime">Czas w czytniku</th>
+          <td id="today-reading"></td>
+          <td id="week-reading"></td>
+          <td id="total-reading"></td>
+        </tr>
+        <tr>
+          <th scope="row" data-i18n="statsPortalOpens">Wejścia na portal</th>
+          <td id="today-portal"></td>
+          <td id="week-portal"></td>
+          <td id="total-portal"></td>
+        </tr>
+      </tbody>
+    </table>
     <div class="popup-actions">
       <a href="reader.html" target="_blank" rel="noopener" data-i18n="openBook">Otwórz książkę</a>
+      <a href="reader.html#quotes" target="_blank" rel="noopener" data-i18n="savedQuotes">Zapisane cytaty</a>
       <a href="options.html" target="_blank" rel="noopener" data-i18n="settings">Ustawienia</a>
     </div>
   </main>

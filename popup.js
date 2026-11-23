@@ -1,4 +1,5 @@
 import { EMPTY_SITES, MINUTES, domainOrigins, groupFor, inDomain, normalizeDomain, sessionState } from './model.mjs';
+import { readingSummary } from './reading-progress.mjs';
 import { appError, checkResponse, errorText, localizeDocument, translator } from './i18n.mjs';
 
 const list = document.querySelector('#sessions');
@@ -8,8 +9,12 @@ const domainLabel = document.querySelector('#current-domain');
 const rule = document.querySelector('#current-rule');
 const save = document.querySelector('#save-rule');
 const status = document.querySelector('#rule-status');
+const periods = ['today', 'week', 'total'];
+const statsCells = Object.fromEntries(periods.map(period => [
+  period, ['openings', 'reading', 'portal'].map(metric => document.getElementById(period + '-' + metric)),
+]));
 const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-let settings = await chrome.storage.local.get(['access', 'sites', 'limits', 'language']);
+let settings = await chrome.storage.local.get(['access', 'sites', 'limits', 'language', 'readingProgress']);
 let t = translator(settings.language);
 localizeDocument(settings.language, t);
 let domain;
@@ -92,9 +97,26 @@ function format(seconds) {
   return Math.floor(seconds / 60) + ':' + String(seconds % 60).padStart(2, '0');
 }
 
+function renderReadingStats(now) {
+  const stats = readingSummary(settings.readingProgress, now);
+  const numbers = new Intl.NumberFormat(settings.language === 'en' ? 'en' : 'pl');
+  for (const period of periods) {
+    const { openings, readingMs, portalOpens } = stats[period];
+    const [count, time, portal] = statsCells[period];
+    count.textContent = numbers.format(openings);
+    portal.textContent = numbers.format(portalOpens);
+    const seconds = Math.floor(readingMs / 1000);
+    const minutes = Math.floor(seconds / 60);
+    if (minutes >= 60) time.textContent = t('statsHours', numbers.format(Math.floor(minutes / 60)), minutes % 60);
+    else if (minutes) time.textContent = t('statsMinutes', minutes, seconds % 60);
+    else time.textContent = t('statsSeconds', seconds);
+  }
+}
+
 function render() {
   const { access = {}, sites = EMPTY_SITES } = settings;
   const now = Date.now();
+  renderReadingStats(now);
   const rows = [];
   for (const group of Object.keys(MINUTES)) {
     const session = access[group];
@@ -119,11 +141,12 @@ function render() {
 
 chrome.storage.onChanged.addListener((changes, area) => {
   if (area !== 'local') return;
-  for (const key of ['access', 'sites', 'limits']) {
+  for (const key of ['access', 'sites', 'limits', 'readingProgress']) {
     if (changes[key]) settings[key] = changes[key].newValue;
   }
   if (changes.language) {
-    t = translator(changes.language.newValue);
+    settings.language = changes.language.newValue;
+    t = translator(settings.language);
     localizeDocument(changes.language.newValue, t);
     notice('');
   }
